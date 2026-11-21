@@ -1,0 +1,52 @@
+import { useMemo } from 'react';
+
+import { AddToPlaylistAction } from '/@/renderer/features/context-menu/actions/add-to-playlist-action';
+import { DownloadAction } from '/@/renderer/features/context-menu/actions/download-action';
+import { EditMetadataAction } from '/@/renderer/features/context-menu/actions/edit-metadata-action';
+import { GetInfoAction } from '/@/renderer/features/context-menu/actions/get-info-action';
+import { GoToAction } from '/@/renderer/features/context-menu/actions/go-to-action';
+import { MarkBestPartsAction } from '/@/renderer/features/context-menu/actions/mark-best-parts-action';
+import { PlayAction } from '/@/renderer/features/context-menu/actions/play-action';
+import { PlayTrackRadioAction } from '/@/renderer/features/context-menu/actions/play-track-radio-action';
+import { SetFavoriteAction } from '/@/renderer/features/context-menu/actions/set-favorite-action';
+import { SetRatingAction } from '/@/renderer/features/context-menu/actions/set-rating-action';
+import { ShowInFileExplorerAction } from '/@/renderer/features/context-menu/actions/show-in-file-explorer-action';
+import { ContextMenuPreview } from '/@/renderer/features/context-menu/components/context-menu-preview';
+import { ContextMenu } from '/@/shared/components/context-menu/context-menu';
+import { LibraryItem, Song } from '/@/shared/types/domain-types';
+
+interface SongContextMenuProps {
+    items: Song[];
+    type: LibraryItem.SONG;
+}
+
+export const SongContextMenu = ({ items, type }: SongContextMenuProps) => {
+    const { ids } = useMemo(() => {
+        const ids = items.map((item) => item.id);
+        return { ids };
+    }, [items]);
+
+    return (
+        <ContextMenu.Content
+            bottomStickyContent={<ContextMenuPreview items={items} itemType={type} />}
+        >
+            <PlayAction ids={ids} itemType={LibraryItem.SONG} songs={items} />
+            <PlayTrackRadioAction disabled={items.length > 1} song={items[0]} />
+            <MarkBestPartsAction songs={items} />
+            <ContextMenu.Divider />
+            <AddToPlaylistAction items={ids} itemType={LibraryItem.SONG} />
+            <ContextMenu.Divider />
+            <SetFavoriteAction ids={ids} itemType={LibraryItem.SONG} />
+            <SetRatingAction ids={ids} itemType={LibraryItem.SONG} />
+            <ContextMenu.Divider />
+            <DownloadAction ids={ids} />
+            {/* BolBeats: no Share; the library server is private to this Mac */}
+            <ContextMenu.Divider />
+            <GoToAction items={items} />
+            <ShowInFileExplorerAction items={items} />
+            <ContextMenu.Divider />
+            <EditMetadataAction songs={items} />
+            <GetInfoAction disabled={items.length === 0} items={items} />
+        </ContextMenu.Content>
+    );
+};

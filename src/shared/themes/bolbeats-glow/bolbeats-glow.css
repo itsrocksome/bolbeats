@@ -1,0 +1,314 @@
+/* stylelint-disable selector-class-pattern */
+
+/* BolBeats Glow: the shell.
+   - The room: the playing cover, blurred across the whole window, under a dark veil (--bb-cover, --bb-glow are set by
+     now-playing-glow.ts). Static layers only; nothing in the room animates.
+   - Glass is for chrome only (sidebar, player, menus); content cards are plain translucent fills, so scrolling
+     never has to re-blur.
+   - One accent, BolBeats pink, for best parts and the main action. Type: Bricolage Grotesque for display,
+     Instrument Sans for everything else. */
+
+@property --bb-glow {
+    syntax: '<color>';
+    inherits: true;
+    initial-value: rgb(150 70 220);
+}
+
+:root {
+    transition: --bb-glow 1.2s ease;
+
+    --bb-text: rgb(251 247 255);
+    --bb-muted: rgb(251 247 255 / 68%);
+    --bb-dim: rgb(251 247 255 / 46%);
+    --bb-glass: rgb(255 255 255 / 7%);
+    --bb-glass-hi: rgb(255 255 255 / 13%);
+    --bb-glass-solid: rgb(32 16 42 / 86%);
+    --bb-edge: rgb(255 255 255 / 13%);
+    --bb-hair: rgb(255 255 255 / 8%);
+    --bb-accent: rgb(255 122 209);
+    --bb-accent-glow: rgb(255 122 209 / 55%);
+    --bb-ink: rgb(22 10 30);
+    --bb-display: 'Bricolage Grotesque', var(--theme-content-font-family);
+    --bb-radius: 22px;
+    --bb-blur: blur(28px) saturate(1.35);
+}
+
+::selection {
+    color: var(--bb-text);
+    background: rgb(255 122 209 / 35%);
+}
+
+body {
+    font-feature-settings: 'ss01';
+    caret-color: var(--bb-accent);
+    background: rgb(18 8 24);
+}
+
+:focus-visible {
+    outline: 2px solid var(--bb-accent) !important;
+    outline-offset: 2px;
+}
+
+/* ---------- type ---------- */
+h1,
+h2,
+.fs-library-header-module-title,
+.fs-text-title-module-root[data-order='1'],
+.fs-text-title-module-root[data-order='2'] {
+    font-family: var(--bb-display) !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.03em;
+}
+
+h3,
+.fs-text-title-module-root[data-order='3'] {
+    font-family: var(--bb-display) !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.02em;
+}
+
+/* ---------- the room ---------- */
+.fs-default-layout-module-layout,
+.fs-mobile-layout-module-layout {
+    position: relative;
+    background: transparent !important;
+    isolation: isolate;
+}
+
+.fs-default-layout-module-layout::before,
+.fs-mobile-layout-module-layout::before {
+    position: absolute;
+    inset: -14%;
+    z-index: -2;
+    pointer-events: none;
+    content: '';
+    background:
+        var(--bb-cover, none) center / cover no-repeat,
+        radial-gradient(70% 70% at 25% 15%, color-mix(in srgb, var(--bb-glow) 75%, transparent), transparent 70%),
+        rgb(24 10 32);
+    filter: blur(90px) saturate(1.5) brightness(0.82);
+    transition: background 1.2s ease;
+}
+
+.fs-default-layout-module-layout::after,
+.fs-mobile-layout-module-layout::after {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    content: '';
+    background:
+        radial-gradient(130% 95% at 72% 0%, transparent 0%, rgb(14 6 22 / 52%) 55%, rgb(9 4 15 / 86%) 100%),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.9'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.05'/%3E%3C/svg%3E");
+}
+
+.fs-main-content-module-main-content-container,
+.fs-mobile-layout-module-main-content,
+.fs-main-content-module-main-content-body,
+.fs-main-content-module-main-content-body-scroll,
+.fs-window-bar-module-macos-container,
+.fs-window-bar-module-windows-container {
+    background: transparent !important;
+    border: 0 !important;
+}
+
+/* the title bar is part of the room; the song title there stays quiet */
+.fs-window-bar-module-player-status-text {
+    font-size: 12px;
+    color: var(--bb-dim);
+}
+
+/* ---------- sidebar: floating glass ---------- */
+.fs-left-sidebar-module-container {
+    margin: 10px 0 10px 10px;
+    overflow: hidden;
+    background: var(--bb-glass) !important;
+    border: 1px solid var(--bb-edge) !important;
+    border-radius: var(--bb-radius);
+    backdrop-filter: var(--bb-blur);
+}
+
+.fs-sidebar-item-module-link {
+    min-height: 38px;
+    margin: 2px 0;
+    color: var(--bb-muted) !important;
+    background: transparent;
+    border: 0 !important;
+    border-radius: 12px;
+    transition: background 150ms, color 150ms;
+}
+
+.fs-sidebar-item-module-link:hover {
+    color: var(--bb-text) !important;
+    background: var(--bb-glass);
+}
+
+.fs-sidebar-item-module-link.fs-sidebar-item-module-active {
+    color: var(--bb-text) !important;
+    background: var(--bb-glass-hi);
+}
+
+/* ---------- player: a floating capsule ---------- */
+.fs-player-bar-module-container {
+    box-sizing: border-box;
+    width: calc(100% - 20px);
+    margin: 0 10px 10px;
+    overflow: hidden;
+    background: var(--bb-glass) !important;
+    border: 1px solid var(--bb-edge) !important;
+    border-radius: 26px;
+    backdrop-filter: var(--bb-blur);
+}
+
+.fs-playerbar-module-container {
+    width: 100% !important; /* the bar is 100vw by default; the capsule is narrower */
+    background: transparent !important;
+    border-top: 0 !important;
+}
+
+.fs-playerbar-slider-module-bar {
+    background-color: var(--bb-text) !important;
+}
+
+.fs-player-button-module-main {
+    background: var(--bb-text) !important;
+    box-shadow: 0 8px 24px rgb(0 0 0 / 30%);
+}
+
+.fs-player-button-module-main svg {
+    color: var(--bb-ink) !important;
+    fill: var(--bb-ink) !important;
+}
+
+/* ---------- buttons and inputs ---------- */
+.mantine-Button-root {
+    border-radius: 999px;
+}
+
+.mantine-Button-root[data-variant='default'],
+.mantine-ActionIcon-root[data-variant='default'] {
+    background: var(--bb-glass);
+    border-color: var(--bb-edge);
+}
+
+.mantine-Button-root[data-variant='default']:hover,
+.mantine-ActionIcon-root[data-variant='default']:hover {
+    background: var(--bb-glass-hi);
+}
+
+.mantine-Input-input {
+    background: rgb(255 255 255 / 6%) !important;
+    border-color: var(--bb-hair) !important;
+    border-radius: 12px;
+}
+
+.mantine-Input-input:focus {
+    border-color: var(--bb-accent) !important;
+}
+
+.mantine-SegmentedControl-root {
+    background: var(--bb-glass);
+    border-radius: 999px;
+}
+
+.mantine-SegmentedControl-indicator {
+    background: var(--bb-glass-hi);
+    border-radius: 999px;
+}
+
+/* ---------- menus, modals, popovers: solid glass above everything ---------- */
+.fs-modal-module-content,
+.fs-context-menu-module-content,
+.fs-dropdown-menu-module-menu-dropdown,
+.fs-popover-module-dropdown,
+.fs-select-module-dropdown,
+.mantine-Menu-dropdown,
+.mantine-Popover-dropdown,
+.mantine-Combobox-dropdown,
+.mantine-Modal-content {
+    background: var(--bb-glass-solid) !important;
+    border: 1px solid var(--bb-edge) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 24px 60px rgb(0 0 0 / 50%) !important;
+    backdrop-filter: blur(24px) saturate(1.3);
+}
+
+.mantine-Modal-overlay {
+    background: rgb(8 3 12 / 62%) !important;
+    backdrop-filter: blur(6px);
+}
+
+.mantine-Tooltip-tooltip {
+    color: var(--bb-ink);
+    background: var(--bb-text);
+    border-radius: 8px;
+}
+
+/* ---------- home genre tiles ---------- */
+.fs-featured-genres-module-genre-container {
+    min-height: 84px;
+    background:
+        radial-gradient(140% 120% at 100% 0%, color-mix(in oklch, var(--genre-color, var(--bb-glow)) 75%, transparent), transparent 72%),
+        var(--bb-glass) !important;
+    border: 1px solid var(--bb-hair);
+    border-radius: 16px !important;
+}
+
+.fs-featured-genres-module-genre-container::before {
+    display: none;
+}
+
+.fs-featured-genres-module-genre-name {
+    font-family: var(--bb-display);
+    font-size: 22px;
+    font-weight: 800 !important;
+    letter-spacing: -0.02em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    :root,
+    .fs-default-layout-module-layout::before {
+        transition: none;
+    }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+    .fs-left-sidebar-module-container,
+    .fs-player-bar-module-container {
+        background: var(--bb-glass-solid) !important;
+        backdrop-filter: none;
+    }
+}
+
+/* ---------- now playing: a round cover, ringed by the song (see now-playing-parts.tsx) ---------- */
+.fs-left-controls-module-playerbar-image,
+.fs-left-controls-module-playerbar-image img {
+    border-radius: 50% !important;
+}
+
+/* ---------- album / artist pages: the header colour melts into the room instead of a solid band ---------- */
+.fs-library-background-overlay-module-overlay,
+.fs-library-background-overlay-module-background-overlay {
+    opacity: 0.28 !important;
+    mask-image: linear-gradient(to bottom, #000 20%, transparent 100%);
+}
+
+/* ---------- missing artwork: soft glass, not a glaring server placeholder (see server-placeholder.ts) ---------- */
+.fs-image-module-unloader {
+    color: var(--bb-dim);
+    background:
+        radial-gradient(120% 90% at 30% 15%, color-mix(in srgb, var(--bb-glow) 40%, transparent), transparent 70%),
+        rgb(255 255 255 / 6%) !important;
+    opacity: 1 !important;
+}
+
+/* ---------- compact window: the menu button moves to the top right, clear of the player and mix bar ---------- */
+.fs-mobile-layout-module-drawer-button {
+    top: 40px;
+    right: 12px;
+    bottom: auto !important;
+    left: auto !important;
+    background: var(--bb-glass) !important;
+    border: 1px solid var(--bb-edge) !important;
+    border-radius: 999px;
+}

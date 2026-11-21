@@ -1,0 +1,346 @@
+/* BolBeats Glow: Home. The hook of the day is a record on the table: its cover as a disc, ringed by the song with
+   the best part lit. Everything else sits on the room as quiet translucent shelves. */
+
+.page {
+    display: grid;
+    gap: clamp(28px, 4cqi, 44px);
+    max-width: 1280px;
+    padding: 18px clamp(16px, 3.4cqi, 44px) 120px;
+    container-type: inline-size;
+}
+
+.page h2 {
+    font-size: clamp(22px, 2.6cqi, 28px);
+}
+
+/* ---------- header ---------- */
+.header {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 16px;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.when {
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+    color: var(--bb-muted, var(--theme-colors-foreground-muted));
+}
+
+.chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.chip {
+    display: inline-flex;
+    gap: 8px;
+    align-items: center;
+    padding: 6px 14px;
+    font-size: 14px;
+    font-weight: 600;
+    background: var(--bb-glass, rgb(255 255 255 / 7%));
+    border: 1px solid var(--bb-edge, rgb(255 255 255 / 13%));
+    border-radius: 999px;
+}
+
+.bulbs {
+    display: inline-flex;
+    gap: 4px;
+}
+
+.bulbs i {
+    width: 7px;
+    height: 7px;
+    background: rgb(255 255 255 / 22%);
+    border-radius: 50%;
+}
+
+.bulbs i.lit {
+    background: var(--bb-accent, var(--theme-colors-primary));
+    box-shadow: 0 0 6px var(--bb-accent, var(--theme-colors-primary));
+}
+
+/* ---------- hero: the hook of the day ---------- */
+.hero {
+    display: grid;
+    grid-template-columns: clamp(200px, 26cqi, 320px) minmax(0, 1fr);
+    gap: clamp(24px, 4cqi, 52px);
+    align-items: center;
+}
+
+.disc {
+    position: relative;
+    aspect-ratio: 1;
+}
+
+.disc-art {
+    position: absolute;
+    inset: 7.5%;
+    width: 85% !important;
+    height: 85% !important;
+    object-fit: cover;
+    border-radius: 50% !important;
+    box-shadow: 0 30px 80px rgb(0 0 0 / 50%);
+}
+
+.disc .disc-ring {
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.hole {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 10%;
+    height: 10%;
+    background: rgb(20 8 26 / 88%);
+    border: 1px solid rgb(255 255 255 / 14%);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.hero-text {
+    min-width: 0;
+}
+
+.kicker {
+    font-size: 16px;
+    font-weight: 650;
+    color: var(--bb-accent, var(--theme-colors-primary));
+}
+
+.page .hero-title {
+    margin: 8px 0 10px;
+    overflow: hidden;
+    font-size: clamp(48px, 9cqi, 112px);
+    font-variation-settings: 'opsz' 96;
+    line-height: 0.9;
+    letter-spacing: -0.045em;
+    text-wrap: balance;
+}
+
+.by {
+    font-size: clamp(16px, 1.6cqi, 19px);
+    color: var(--bb-muted, var(--theme-colors-foreground-muted));
+}
+
+.facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 26px;
+    margin: 18px 0 24px;
+}
+
+.facts div {
+    display: grid;
+}
+
+.facts dd {
+    margin: 0;
+    font-family: var(--bb-display);
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+.facts dt {
+    order: 1;
+    font-size: 13px;
+    color: var(--bb-muted, var(--theme-colors-foreground-muted));
+}
+
+.row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.play {
+    color: var(--bb-ink, rgb(22 10 30)) !important;
+    background: var(--bb-text, white) !important;
+}
+
+.empty {
+    display: grid;
+    gap: 14px;
+    justify-items: start;
+    max-width: 720px;
+}
+
+@container (width < 640px) {
+    .hero {
+        grid-template-columns: 1fr;
+        justify-items: start;
+    }
+
+    .disc {
+        width: min(240px, 70cqi);
+    }
+}
+
+/* ---------- shelves ---------- */
+.section-head {
+    display: flex;
+    gap: var(--theme-spacing-md);
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 14px;
+}
+
+.section-head h2 {
+    margin: 0;
+}
+
+.sub {
+    margin: -8px 0 14px;
+}
+
+.more {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--bb-muted, var(--theme-colors-foreground-muted));
+    text-decoration: none;
+}
+
+.more:hover {
+    color: var(--theme-colors-foreground);
+}
+
+.shelf {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(180px, 44%), 1fr));
+    gap: 16px;
+}
+
+.pick {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+    padding: 10px 10px 12px;
+    background: var(--bb-glass, rgb(255 255 255 / 7%));
+    border: 1px solid var(--bb-hair, rgb(255 255 255 / 8%));
+    border-radius: 20px;
+}
+
+.pick-art {
+    display: block;
+    padding: 0;
+    margin-bottom: 8px;
+    cursor: pointer;
+    background: none;
+    border: 0;
+    border-radius: 14px;
+}
+
+.pick > button:last-child {
+    justify-self: start;
+}
+
+.song-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
+    gap: 8px;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+
+.song-row button {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    width: 100%;
+    min-width: 0;
+    padding: 8px;
+    font: inherit;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+    background: var(--bb-glass, rgb(255 255 255 / 7%));
+    border: 1px solid transparent;
+    border-radius: 16px;
+    transition: background 150ms;
+}
+
+.song-row button:hover {
+    background: var(--bb-glass-hi, rgb(255 255 255 / 13%));
+}
+
+.song-row button img,
+.song-row button > span:first-child {
+    border-radius: 50%;
+}
+
+.song-row span,
+.releases a {
+    display: grid;
+    min-width: 0;
+}
+
+.song-row b,
+.song-row small,
+.releases b,
+.releases small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.song-row small,
+.releases small {
+    color: var(--bb-muted, var(--theme-colors-foreground-muted));
+}
+
+.releases {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(160px, 44%), 1fr));
+    gap: 16px;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+
+.releases a {
+    gap: 2px;
+    color: inherit;
+    text-decoration: none;
+}
+
+.releases img {
+    width: 100%;
+    aspect-ratio: 1;
+    margin-bottom: 8px;
+    object-fit: cover;
+    border-radius: 16px;
+    box-shadow: 0 16px 36px rgb(0 0 0 / 35%);
+}
+
+.browse {
+    justify-self: start;
+}
+
+.song-row li {
+    position: relative;
+}
+
+/* ⋯ on each song: shown on hover or keyboard focus */
+.row-more {
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    z-index: 1;
+    opacity: 0;
+    transform: translateY(-50%);
+    transition: opacity 120ms;
+}
+
+.song-row li:hover .row-more,
+.song-row li:focus-within .row-more {
+    opacity: 1;
+}

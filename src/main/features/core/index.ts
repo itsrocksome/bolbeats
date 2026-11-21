@@ -1,0 +1,13 @@
+import './autodiscover';
+import './dlna';
+import './bolify-folder';
+import './local-library';
+import './online-lookup';
+import './custom-themes';
+import './lyrics';
+import './player';
+import './remote';
+import './settings';
+import './discord-rpc';
+import './tag-editor';
+import './visualizer';

@@ -1,0 +1,32 @@
+name: Test
+
+on: [push, pull_request]
+
+jobs:
+    check:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Check out Git repository
+              uses: actions/checkout@v6
+
+            - name: Install PNPM
+              uses: pnpm/action-setup@v4
+
+            - name: Install Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 24
+                  cache: pnpm
+
+            - name: Install ffmpeg (the audio tests make real MP3 files)
+              run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
+
+            - name: Lint and typecheck
+              run: pnpm run lint
+
+            - name: Unit tests
+              run: node --test test/

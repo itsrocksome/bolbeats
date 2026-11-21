@@ -1,0 +1,70 @@
+.ring {
+    position: absolute;
+    inset: -7px;
+    z-index: 1;
+    width: calc(100% + 14px);
+    height: calc(100% + 14px);
+    pointer-events: none;
+    fill: none;
+    stroke-linecap: round;
+}
+
+.track {
+    stroke: rgb(255 255 255 / 18%);
+    stroke-width: 3;
+}
+
+.played {
+    stroke: var(--theme-colors-foreground);
+    stroke-width: 3;
+}
+
+.part {
+    filter: drop-shadow(0 0 3px var(--bb-accent, var(--theme-colors-primary)));
+    stroke: var(--bb-accent, var(--theme-colors-primary));
+    stroke-width: 5;
+}
+
+.marks {
+    position: absolute;
+    inset: 50% 0 auto;
+    z-index: 1;
+    height: 6px;
+    pointer-events: none;
+    transform: translateY(-50%);
+}
+
+.marks span {
+    position: absolute;
+    top: -1px;
+    bottom: -1px;
+    min-width: 4px;
+    background: var(--bb-accent, var(--theme-colors-primary));
+    border-radius: 4px;
+    box-shadow: 0 0 10px var(--bb-accent, var(--theme-colors-primary));
+}
+
+.jump {
+    flex-shrink: 0;
+    padding: 5px 12px;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 650;
+    color: var(--theme-colors-foreground);
+    white-space: nowrap;
+    cursor: pointer;
+    background: rgb(255 255 255 / 8%);
+    border: 1px solid rgb(255 255 255 / 14%);
+    border-radius: 999px;
+    transition: background 150ms;
+}
+
+.jump:hover {
+    background: rgb(255 255 255 / 14%);
+}
+
+.jump[data-on] {
+    color: rgb(22 10 30);
+    background: var(--bb-accent, var(--theme-colors-primary));
+    border-color: transparent;
+}

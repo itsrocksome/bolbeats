@@ -1,0 +1,53 @@
+.container {
+    width: 100vw;
+    height: 100%;
+    border-top: 1px solid alpha(var(--theme-colors-border), 0.5);
+}
+
+.controls-grid {
+    display: grid;
+
+    /* BolBeats: the right column sizes to its buttons so they never spill over the transport */
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 1.3fr) minmax(max-content, 1fr);
+    gap: 1rem;
+    height: 100%;
+
+    @media (width < 768px) {
+        grid-template-columns: minmax(0, 0.5fr) minmax(0, 1fr) minmax(0, 0.5fr);
+    }
+}
+
+.right-grid-item {
+    align-self: center;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+.left-grid-item {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.center-grid-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* BolBeats: on narrower windows drop the volume slider and rating (the volume icon still works)
+   so the song title keeps room */
+@media (width < 1080px) {
+    /* stylelint-disable selector-class-pattern -- Mantine's own class names */
+    .right-grid-item :global(.mantine-Slider-root),
+    .right-grid-item :global(.mantine-Rating-root) {
+        display: none;
+    }
+    /* stylelint-enable selector-class-pattern */
+}

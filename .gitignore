@@ -1,0 +1,12 @@
+node_modules
+dist
+out
+.DS_Store
+.eslintcache
+*.log*
+release
+.idea
+.scratch
+tsconfig.*.tsbuildinfo
+# Navidrome binary (66 MB): `node scripts/get-navidrome.mjs` fetches it
+resources/navidrome/
