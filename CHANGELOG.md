@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.2.0
+
+- Best parts only: one switch in the player bar, and whatever you play (an album, an artist, search, your queue) plays
+  just each song's best parts, then the next song. A song without parts gets them found on the fly. Switch it off for
+  full songs.
+- Several best parts by default: best-parts playlists and Let BolBeats pick use every part a song has, and the parts you
+  already had are checked once in the background for more (BolBeats tells you when it finds some).
+- Longer, complete parts: every part is at least 15 seconds, ends where its musical phrase ends, on a breath, and has no
+  upper limit, so a part can be a whole section of the song.
+- A song whose file was deleted, or that can't be played, is skipped instead of stopping the whole playlist; a
+  best-parts playlist plays the rest of its parts.
+- Fixed: the song you were on when you opened BolBeats sometimes wouldn't play.
+
 ## 1.1.0
 
 - Every best part, not just one: BolBeats now finds each section of a song that stands out (the hook, plus a drop,

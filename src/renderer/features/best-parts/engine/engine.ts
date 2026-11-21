@@ -313,6 +313,7 @@ export function snapQuiet(x: Float32Array, sr: number, t: number, win = 0.25) {
 // 3. plus how loud and busy the whole window is, a bonus for starting where a section starts, minus intro and fade-out;
 // 4. start and end moved to the nearest section change, then onto the beat and a breath.
 const BLOCK = 0.5;
+const MIN_PART = 15; // seconds: shorter parts feel cut off
 
 const unit = (v: number[]) => {
     const n = Math.hypot(...v) || 1;
@@ -424,15 +425,15 @@ const nearestPeak = (nov: number[], target: number, lo: number, hi: number) => {
 
 // BolBeats: the best parts of a song, strongest first. The first is the hook (usually the chorus); after it, every
 // section that sounds different (not another repeat of a part already picked, never overlapping one) and stands out
-// from the song at least `stand` as much as the hook does (0.5 = halfway from the song's typical moment to its hook),
-// like a drop, a post-chorus or a second hook. How many is up to the song: on 36 real songs, 8 had two. `max` only
+// from the song at least `stand` as much as the hook does (0.4 = 40% of the way from the song's typical moment to its hook),
+// like a drop, a post-chorus or a second hook. How many is up to the song: on 36 real songs, about 1 in 3 had two. `max` only
 // exists so callers can ask for the hook alone.
 export function findHooks(
     channels: Float32Array[],
     sampleRate: number,
     len = 24,
     max = Infinity,
-    stand = 0.5,
+    stand = 0.4,
 ): { median: number; parts: [number, number][]; scores: number[] } {
     const m = toMono(channels, sampleRate);
     const half = new Float32Array(m.x.length >> 1);
@@ -492,10 +493,13 @@ export function findHooks(
     const phrase = (16 * 60) / bpm;
 
     // One part from a starting block: start on the section change, last as long as the section keeps repeating
-    // (12-45 s) ending at the first strong section change inside it, rounded to whole phrases, never past `stopAt` s.
-    const refine = (t: number, stopAt: number) => {
+    // (no upper limit: a part can be a whole section), end at the first strong section change inside it, and round UP
+    // to whole phrases so the part finishes its line (a phrase barely begun is dropped). A part shorter than 15 s takes
+    // in the phrase before it (the build-up), or the one after, without running into `notBefore`..`stopAt` (other
+    // parts). The end lands on a breath.
+    const refine = (t: number, stopAt: number, notBefore = 0) => {
         const a = nearestPeak(sharp, t, t - 6, t + 6);
-        const run = repeatLength(S, a, min, Math.round(45 / bs));
+        const run = repeatLength(S, a, min, n);
         let cut = -1;
         for (let i = a + min; run && i <= Math.min(n - 2, a + run + 4) && cut < 0; i++)
             if (nov[i] >= strong && nov[i] >= nov[i - 1] && nov[i] >= nov[i + 1]) cut = i;
@@ -503,18 +507,23 @@ export function findHooks(
         const z = run
             ? nearestPeak(sharp, goal, goal - 4, goal + 4)
             : nearestPeak(sharp, a + L, a + Math.round(L * 0.7), a + Math.round(L * 1.4));
-        const start = Math.max(0, snapQuiet(half, sr, onBeat(a * bs), 0.12));
-        let phrases = Math.max(2, Math.round(((z - a) * bs) / phrase));
+        let start = Math.max(0, snapQuiet(half, sr, onBeat(a * bs), 0.12));
+        let phrases = Math.max(2, Math.ceil(((z - a) * bs) / phrase - 0.25));
         // a phrase that runs a little into the next picked section is kept and ends where that section starts
+        while (phrases > 1 && start + phrases * phrase > stopAt + phrase / 4) phrases--;
+        while (phrases * phrase < MIN_PART && start - phrase >= notBefore - 0.01) {
+            start = Math.max(0, start - phrase);
+            phrases++;
+        }
         while (
-            phrases > 1 &&
-            (phrases * phrase > 45 || start + phrases * phrase > stopAt + phrase / 4)
+            phrases * phrase < MIN_PART &&
+            start + (phrases + 1) * phrase <= Math.min(duration, stopAt) + phrase / 4
         )
-            phrases--;
+            phrases++;
         const end = Math.min(
             duration,
             stopAt,
-            snapQuiet(half, sr, onBeat(start + phrases * phrase), 0.12),
+            snapQuiet(half, sr, onBeat(start + phrases * phrase), 0.35),
         );
         return { a, end: Math.max(end, Math.min(stopAt, start + 8)), start };
     };
@@ -566,8 +575,9 @@ export function findHooks(
         // the same section again: on real songs other choruses match the hook at 0.48 and up, different sections at 0.43 or less
         if (picked.some((p) => repeatOf(t, p.a, p.zb) >= 0.45)) continue;
         const next = taken.filter(([a]) => a > t).map(([a]) => a * bs);
-        const part = refine(t, Math.min(duration, ...next));
-        if (part.end - part.start < 8) continue;
+        const prev = taken.filter(([, z]) => z <= t).map(([, z]) => z * bs);
+        const part = refine(t, Math.min(duration, ...next), Math.max(0, ...prev));
+        if (part.end - part.start < MIN_PART - 0.5) continue;
         picked.push({ ...part, score: v, zb: Math.round(part.end / bs) });
         take(part.a, picked[picked.length - 1].zb);
     }
@@ -604,10 +614,7 @@ export function findHooks(
             // split on the phrase line nearest the change
             const k = Math.max(1, Math.round((cut * bs - p.start) / phrase));
             const at = p.start + k * phrase;
-            if (
-                at - p.start >= Math.max(8, phrase * 0.75) &&
-                p.end - at >= Math.max(8, phrase * 0.75)
-            ) {
+            if (at - p.start >= MIN_PART - 0.5 && p.end - at >= MIN_PART - 0.5) {
                 out.push(
                     { end: at, score: p.score, start: p.start },
                     { end: p.end, score: p.score, start: at },

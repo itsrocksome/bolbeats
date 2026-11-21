@@ -48,6 +48,63 @@ const hooksOf = async (song: Song): Promise<BestPart[]> => {
         });
 };
 
+// Songs already checked for every best part by this finder (parts made before 1.1 came one per song).
+const SCANNED = 'hookline_scanned_v2';
+const scannedSongs = (): Record<string, 1> => {
+    try {
+        return JSON.parse(localStorage.getItem(SCANNED) ?? '{}');
+    } catch {
+        return {};
+    }
+};
+export const isScanned = (songId: string) => !!scannedSongs()[songId];
+const markScanned = (songId: string) => {
+    try {
+        localStorage.setItem(SCANNED, JSON.stringify({ ...scannedSongs(), [songId]: 1 }));
+    } catch {
+        // storage blocked: the song is just checked again next time
+    }
+};
+const overlaps = (a: Pick<BestPart, 'end' | 'start'>, b: Pick<BestPart, 'end' | 'start'>) =>
+    Math.min(a.end, b.end) - Math.max(a.start, b.start) >
+    Math.min(a.end - a.start, b.end - b.start) / 2;
+
+// BolBeats: a song that already has parts gets the ones BolBeats finds that don't overlap them (yours are never
+// changed). Returns the new parts and, for each existing part under 15 s that a new longer part covers, its replacement.
+export const addMoreParts = async (song: Song) => {
+    const have = partsOfSong(song.id);
+    const found = await hooksOf(song);
+    const fresh = found.filter((f) => !have.some((h) => overlaps(h, f)));
+    const longer = new Map<string, BestPart>();
+    for (const h of have) {
+        const f = found.find(
+            (x) => overlaps(h, x) && h.end - h.start < 15 && x.end - x.start > h.end - h.start,
+        );
+        if (f) longer.set(h.id, f);
+    }
+    for (const p of [...fresh, ...longer.values()]) useBestPartsStore.getState().savePart(p);
+    markScanned(song.id);
+    adopt(song.id, fresh, longer);
+    return { fresh, longer };
+};
+
+// Best-parts playlists BolBeats made (never ones you've changed) take a song's new parts, re-arranged where they fit;
+// a short old part is swapped for its longer find everywhere it can be, and deleted once nothing of yours uses it.
+const adopt = (songId: string, fresh: BestPart[], longer: Map<string, BestPart>) => {
+    const store = useBestPartsStore.getState();
+    for (const m of Object.values(store.mixes)) {
+        if (!m.auto || !m.partIds.some((id) => store.parts[id]?.songId === songId)) continue;
+        const ids = [...m.partIds.map((id) => longer.get(id)?.id ?? id), ...fresh.map((p) => p.id)];
+        const parts = [...new Set(ids)]
+            .map((id) => useBestPartsStore.getState().parts[id])
+            .filter(Boolean);
+        store.updateMix(m.id, { auto: true, partIds: autoOrder(parts) });
+    }
+    const mixes = Object.values(useBestPartsStore.getState().mixes);
+    for (const old of longer.keys())
+        if (!mixes.some((m) => !m.auto && m.partIds.includes(old))) store.deletePart(old);
+};
+
 // Returns the part ids in a smooth play order. onStep reports progress; cancelled() stops early.
 // BolBeats: two songs at a time (decoding and the finder both run off the main thread); parts keep playlist order.
 export const pickHooks = async (
@@ -65,15 +122,22 @@ export const pickHooks = async (
             const song = songs[i];
             onStep(done, song);
             const have = partsOfSong(song.id);
-            if (have.length) found[i] = have;
-            else {
-                try {
+            try {
+                if (!have.length) {
                     const parts = await hooksOf(song);
                     for (const p of parts) useBestPartsStore.getState().savePart(p);
+                    markScanned(song.id);
                     found[i] = parts;
-                } catch {
-                    failed.push(song);
+                } else {
+                    // parts from before: add the ones BolBeats finds now (a short old part gives way to its longer find)
+                    const { fresh, longer } = isScanned(song.id)
+                        ? { fresh: [], longer: new Map() }
+                        : await addMoreParts(song);
+                    found[i] = [...have.map((h) => longer.get(h.id) ?? h), ...fresh];
                 }
+            } catch {
+                if (have.length) found[i] = have;
+                else failed.push(song);
             }
             done++;
             await new Promise((r) => setTimeout(r, 0)); // let the progress bar paint between songs

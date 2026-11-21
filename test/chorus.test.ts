@@ -157,8 +157,8 @@ test('short songs still get a sensible part inside the song', () => {
     );
 });
 
-test('the part is as long as the chorus: 8, 12 and 16-bar choruses', () => {
-    for (const len of [16, 24, 32]) {
+test('the part is as long as the chorus: 8 to 24-bar choruses', () => {
+    for (const len of [16, 24, 32, 48]) {
         const c: Sec = { ...chorus, sec: len };
         const song = [intro, verse, c, verse, c, bridge, c, outro];
         const { at, x } = build(song);
@@ -221,6 +221,9 @@ test('a song with two different hooks gets both as best parts; a song with one g
                 found[i][1] <= found[j][0] + 0.01 || found[j][1] <= found[i][0] + 0.01,
                 'parts never overlap',
             );
+
+    for (const [a, b] of found)
+        assert.ok(b - a >= 14.5, `a part of ${(b - a).toFixed(1)} s is too short`);
 
     const one = build([intro, verse, chorus, verse, chorus, bridge, chorus, outro]);
     assert.equal(findHooks([one.x], SR, 16).parts.length, 1);

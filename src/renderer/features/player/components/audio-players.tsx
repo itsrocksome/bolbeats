@@ -90,11 +90,14 @@ export function getDefaultTranscodingProfiles() {
 }
 
 export function getDirectPlayProfiles() {
-    return DIRECT_PLAY_PROFILES;
+    // BolBeats: the restored queue asks for its stream before the player mounts; an empty list made the server
+    // pick a transcode (no ffmpeg here) and the first song failed on every launch
+    return detectBrowserProfile();
 }
 
 // Shamelessly taken from NavidromeUI
 function detectBrowserProfile() {
+    if (DIRECT_PLAY_PROFILES.length) return DIRECT_PLAY_PROFILES;
     const audio = new Audio();
 
     for (const { codec, container, mime } of CODEC_PROBES) {

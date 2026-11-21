@@ -309,39 +309,44 @@ export const playParts = async (
     });
     const c = audioCtx();
     await c.resume();
-    const vols = gains(use.map((p) => p.analysis.loudness));
-    const items: MixItem[] = [];
-    const loads = use.map((p) =>
-        partBuffer(p).then(
-            (b) => ({ b }),
-            (e: Error) => ({ e }),
+    const got = await Promise.all(
+        use.map((p) =>
+            partBuffer(p).then(
+                (b) => ({ b }),
+                (e: Error) => ({ e }),
+            ),
         ),
     ); // decode side by side
-    for (const [i, p] of use.entries()) {
-        let buffer: AudioBuffer;
-        try {
-            const got = await loads[i];
-            if ('e' in got) throw got.e;
-            buffer = got.b;
-        } catch (e) {
-            if (run !== runId) return;
-            stopMix(); // never leave the mix stuck on "loading"
-            toast.error({
-                message: `${p.title}: ${(e as Error).message}`,
-                title: 'Couldn’t play this mix',
-            });
-            return;
-        }
-        if (run !== runId) return; // stopped while loading
-        items.push({
-            a: p.analysis,
-            buffer,
-            dur: p.end - p.start,
-            off: 0,
-            t: i < use.length - 1 ? { ...seam(p, use[i + 1], picks).pick } : null,
-            vol: vols[i],
+    if (run !== runId) return; // stopped while loading
+    // BolBeats: a part whose song can't be loaded (its file was deleted, say) is left out, not the whole mix
+    const ok = use.filter((_, i) => 'b' in got[i]);
+    const buffers = got.flatMap((g) => ('b' in g ? [g.b] : []));
+    const failed = got.find((g) => 'e' in g);
+    if (!ok.length) {
+        stopMix(); // never leave the mix stuck on "loading"
+        toast.error({
+            message: `${use[0].title}: ${failed && 'e' in failed ? failed.e.message : ''}`,
+            title: 'Couldn’t play this mix',
         });
+        return;
     }
+    if (ok.length < use.length) {
+        const n = use.length - ok.length;
+        toast.warn({
+            message: `Left out ${n} part${n > 1 ? 's' : ''} whose song couldn’t be loaded.`,
+            title: 'Playing the rest',
+        });
+        useMixPlayer.setState({ partIds: ok.map((p) => p.id) });
+    }
+    const vols = gains(ok.map((p) => p.analysis.loudness));
+    const items: MixItem[] = ok.map((p, i) => ({
+        a: p.analysis,
+        buffer: buffers[i],
+        dur: p.end - p.start,
+        off: 0,
+        t: i < ok.length - 1 ? { ...seam(p, ok[i + 1], picks).pick } : null,
+        vol: vols[i],
+    }));
     if (opts.preview != null && items.length === 2) {
         const [A, B] = items;
         A.off = Math.max(0, A.dur - 8);

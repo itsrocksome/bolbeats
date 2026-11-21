@@ -6,6 +6,7 @@ import { useCallback, useEffect, useImperativeHandle, useRef, useState } from 'r
 import { AudioPlayer, PlayerOnProgressProps } from '/@/renderer/features/player/audio-player/types';
 import { convertToLogVolume } from '/@/renderer/features/player/audio-player/utils/player-utils';
 import { logger } from '/@/renderer/utils/logger';
+import { toast } from '/@/shared/components/toast/toast';
 import { PlayerStatus } from '/@/shared/types/types';
 
 export interface WebPlayerEngineHandle extends AudioPlayer {
@@ -43,6 +44,17 @@ interface WebPlayerEngineProps {
 
 const MAX_NETWORK_RETRIES = 5;
 const NETWORK_RETRY_DELAY_MS = 2000;
+
+// BolBeats: a song that can't be played (its file was deleted, say) is skipped instead of stopping the queue.
+// Several in a minute means the library itself is down, so then it pauses as before.
+const skipped: number[] = [];
+const maySkip = () => {
+    const now = Date.now();
+    while (skipped.length && now - skipped[0] > 60_000) skipped.shift();
+    if (skipped.length >= 3) return false;
+    skipped.push(now);
+    return true;
+};
 
 // Store volume is 0-100; clamp the normalized result so HTMLMediaElement.volume
 // never receives a value outside [0, 1] (throws IndexSizeError in some engines)
@@ -199,6 +211,7 @@ export const WebPlayerEngine = (props: WebPlayerEngineProps) => {
         onEnded: () => void,
         onErrorPause: () => void,
         networkRetryCountRef: React.RefObject<number>,
+        num: number,
     ) => {
         return ({ target }: ErrorEvent) => {
             const { current: player } = playerRef;
@@ -214,6 +227,8 @@ export const WebPlayerEngine = (props: WebPlayerEngineProps) => {
             const isNetworkError =
                 code === MediaError.MEDIA_ERR_NETWORK ||
                 code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED;
+            // BolBeats: the other player holds the next song, loaded early; its failure must not stop this one
+            const isNext = num !== playerNum;
 
             if (isNetworkError) {
                 if (networkRetryCountRef.current < MAX_NETWORK_RETRIES) {
@@ -225,6 +240,7 @@ export const WebPlayerEngine = (props: WebPlayerEngineProps) => {
                     });
                     const audio = target;
                     setTimeout(() => {
+                        if (isNext) return audio.load();
                         pauseBothPlayers();
                         audio.load();
                         audio.play().catch(() => {
@@ -243,12 +259,21 @@ export const WebPlayerEngine = (props: WebPlayerEngineProps) => {
                 return;
             }
 
+            if (isNext) {
+                // dealt with when it comes up (see the effect on playerNum below)
+                logger.warn('Next song failed to load', { code, label });
+                return;
+            }
+
             pauseBothPlayers();
-            if (code === MediaError.MEDIA_ERR_DECODE) {
-                logger.error('Playback decode error, skipping track', {
+            if (code === MediaError.MEDIA_ERR_DECODE || maySkip()) {
+                logger.error('Playback error, skipping track', {
                     code,
                     label,
                     retryCount: networkRetryCountRef.current,
+                });
+                toast.warn({
+                    message: "BolBeats couldn't play a song, so it skipped to the next one.",
                 });
                 onEnded();
             } else {
@@ -264,10 +289,25 @@ export const WebPlayerEngine = (props: WebPlayerEngineProps) => {
         };
     };
 
+    // BolBeats: each player's count starts over only when its own song changes (a waiting song keeps its failures)
     useEffect(() => {
         networkRetryCount1.current = 0;
+    }, [src1]);
+    useEffect(() => {
         networkRetryCount2.current = 0;
-    }, [src1, src2]);
+    }, [src2]);
+
+    // BolBeats: when a song comes up, a normal song end has already started it. After a skip nothing has, so start
+    // it; and if it failed to load while it waited, load it once more (failing again skips it).
+    useEffect(() => {
+        const audio = (playerNum === 1 ? player1Ref : player2Ref).current?.getInternalPlayer();
+        if (!(audio instanceof HTMLAudioElement) || playerStatus !== PlayerStatus.PLAYING) return;
+        if (audio.error) {
+            (playerNum === 1 ? networkRetryCount1 : networkRetryCount2).current =
+                MAX_NETWORK_RETRIES;
+            audio.load();
+        } else if (audio.paused) audio.play().catch(() => {});
+    }, [playerNum, playerStatus]);
 
     // When not playing, always pause both players - even during a transition
     useEffect(() => {
@@ -339,6 +379,7 @@ export const WebPlayerEngine = (props: WebPlayerEngineProps) => {
                     () => onEndedPlayer1(),
                     onErrorPause,
                     networkRetryCount1,
+                    1,
                 )}
                 onProgress={onProgressPlayer1}
                 onReady={handleOnReadyPlayer1}
@@ -365,6 +406,7 @@ export const WebPlayerEngine = (props: WebPlayerEngineProps) => {
                     () => onEndedPlayer2(),
                     onErrorPause,
                     networkRetryCount2,
+                    2,
                 )}
                 onProgress={onProgressPlayer2}
                 onReady={handleOnReadyPlayer2}

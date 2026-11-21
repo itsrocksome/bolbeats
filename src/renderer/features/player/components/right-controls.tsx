@@ -2,6 +2,7 @@ import { t } from 'i18next';
 import { useCallback, useEffect, useMemo, useState, WheelEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { BestPartsOnly } from '/@/renderer/features/best-parts/components/best-parts-only';
 import { MarkMomentButton } from '/@/renderer/features/best-parts/components/mark-moment-button';
 import { JumpToPart } from '/@/renderer/features/best-parts/components/now-playing-parts';
 import { PopoverPlayQueue } from '/@/renderer/features/now-playing/components/popover-play-queue';
@@ -93,6 +94,7 @@ export const RightControls = () => {
     return (
         <Flex align="flex-end" direction="column" h="100%" px="1rem" py="0.5rem">
             <Group h="calc(100% / 3)">
+                <BestPartsOnly />
                 <JumpToPart />
                 {showRatings && <RatingButton />}
                 <AutoDJButton />
