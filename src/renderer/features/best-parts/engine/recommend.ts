@@ -49,12 +49,13 @@ export const arc = <T>(items: T[], energy: (t: T) => number) => {
     return [...up, ...down.reverse()];
 };
 
-// One part per song (the most played, else the first) so a made-for-you list never repeats a song.
-const onePerSong = (parts: RecPart[], plays: Plays) => {
+// One part per song (one you liked, else the most played, else the first) so a made-for-you list never repeats a song.
+const onePerSong = (parts: RecPart[], plays: Plays, liked: Set<string>) => {
     const best = new Map<string, RecPart>();
+    const rank = (p: RecPart) => (liked.has(p.id) ? 1e6 : 0) + (plays[p.id]?.n ?? 0);
     for (const p of parts) {
         const cur = best.get(p.songId);
-        if (!cur || (plays[p.id]?.n ?? 0) > (plays[cur.id]?.n ?? 0)) best.set(p.songId, p);
+        if (!cur || rank(p) > rank(cur)) best.set(p.songId, p);
     }
     return [...best.values()];
 };
@@ -65,10 +66,11 @@ export function madeForYou(
     today: string,
     now: number,
     compatible: (a: RecPart['analysis']['key'], b: RecPart['analysis']['key']) => boolean,
+    liked: Set<string> = new Set(), // BolBeats: parts you gave a thumbs up
 ): Suggestion[] {
     const e = energies(parts);
     const en = (p: RecPart) => e.get(p.id) ?? 0.5;
-    const songs = onePerSong(parts, plays);
+    const songs = onePerSong(parts, plays, liked);
     const out: Suggestion[] = [];
     const add = (id: string, title: string, why: string, list: RecPart[]) => {
         if (list.length >= 3) out.push({ id, partIds: list.map((p) => p.id), title, why });
@@ -77,7 +79,9 @@ export function madeForYou(
     // Weighted daily sample: less-played parts come up more often (a fresh mix, not the same favourites).
     const rnd = seeded(today);
     const daily = songs
-        .map((p) => [p, rnd() ** (1 + (plays[p.id]?.n ?? 0) / 4)] as const)
+        .map(
+            (p) => [p, rnd() ** ((liked.has(p.id) ? 0.5 : 1) + (plays[p.id]?.n ?? 0) / 4)] as const,
+        )
         .sort((a, b) => b[1] - a[1])
         .slice(0, 12)
         .map(([p]) => p);
@@ -86,6 +90,16 @@ export function madeForYou(
         'Daily hooks',
         'A fresh pick of your parts every day, building up and easing off',
         arc(daily, en),
+    );
+
+    add(
+        'liked',
+        'Thumbs up',
+        'Every part you gave a thumbs up, building up and easing off',
+        arc(
+            parts.filter((p) => liked.has(p.id)),
+            en,
+        ),
     );
 
     const byEnergy = [...songs].sort((a, b) => en(a) - en(b));
@@ -139,7 +153,7 @@ export function tune(parts: RecPart[], energy: number, minutes: number) {
     const en = (p: RecPart) => e.get(p.id) ?? 0.5;
     const picked: RecPart[] = [];
     let total = 0;
-    for (const p of onePerSong(parts, {}).sort(
+    for (const p of onePerSong(parts, {}, new Set()).sort(
         (a, b) => Math.abs(en(a) - energy) - Math.abs(en(b) - energy),
     )) {
         if (total >= minutes * 60) break;

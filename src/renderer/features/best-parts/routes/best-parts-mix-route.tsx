@@ -33,6 +33,7 @@ import {
     toggleMixPause,
     useMixPlayer,
 } from '/@/renderer/features/best-parts/mix-player';
+import { shareMix } from '/@/renderer/features/best-parts/share-actions';
 import {
     ALL_PARTS_MIX,
     useBestPartsStore,
@@ -361,6 +362,20 @@ const MixRoute = () => {
                                         onClick={exportMix}
                                     >
                                         {saving ? 'Saving…' : 'Save as audio file'}
+                                    </DropdownMenu.Item>
+                                    <DropdownMenu.Item
+                                        disabled={!parts.length}
+                                        leftSection={<Icon icon="share" />}
+                                        onClick={() => shareMix(mix.id, 'share')}
+                                    >
+                                        Share…
+                                    </DropdownMenu.Item>
+                                    <DropdownMenu.Item
+                                        disabled={!parts.length}
+                                        leftSection={<Icon icon="fileJson" />}
+                                        onClick={() => shareMix(mix.id, 'save')}
+                                    >
+                                        Save playlist file…
                                     </DropdownMenu.Item>
                                     <DropdownMenu.Item
                                         leftSection={<Icon icon="add" />}

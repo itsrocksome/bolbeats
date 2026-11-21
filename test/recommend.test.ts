@@ -57,3 +57,10 @@ test('streak: counts consecutive days with a minute or more', () => {
     assert.equal(streak(days, new Date(2026, 10, 20, 12)), 2); // today not started yet: counts from yesterday
     assert.equal(streak({ ...days, '2026-11-20': 61 }, new Date(2026, 10, 20, 12)), 3);
 });
+
+test('madeForYou: thumbs-up parts get a playlist of their own once there are three', () => {
+    const two = madeForYou(parts, {}, '2026-11-20', 0, sameTonic, new Set(['p1', 'p4']));
+    assert.ok(!two.some((r) => r.id === 'liked'));
+    const three = madeForYou(parts, {}, '2026-11-20', 0, sameTonic, new Set(['p1', 'p4', 'p7']));
+    assert.deepEqual(three.find((r) => r.id === 'liked')?.partIds.sort(), ['p1', 'p4', 'p7']);
+});

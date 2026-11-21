@@ -30,6 +30,7 @@ import {
     type BestPart,
     useBestPartsStore,
 } from '/@/renderer/features/best-parts/store/best-parts.store';
+import { editedPart } from '/@/renderer/features/best-parts/store/taste.store';
 import { formatClock } from '/@/renderer/features/best-parts/utils';
 import { Button } from '/@/shared/components/button/button';
 import { Group } from '/@/shared/components/group/group';
@@ -306,6 +307,9 @@ export const PartEditor = ({
         let [a, z] = range;
         if (snap) [a, z] = [snapQuiet(mono!.x, mono!.sr, a), snapQuiet(mono!.x, mono!.sr, z)];
         const partId = editing ?? nanoid();
+        // BolBeats: trimming or extending a part BolBeats found teaches it your idea of a best part
+        const before = editing ? useBestPartsStore.getState().parts[editing] : undefined;
+        if (before?.auto) editedPart([before.start, before.end], [a, z]);
         const part: BestPart = {
             album: song.album,
             analysis: analyzeBuffer(slice(buf!, a, z)),

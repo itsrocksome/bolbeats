@@ -21,7 +21,7 @@ const give = (w: Worker) => {
     else idle.push(w);
 };
 
-const inWorker = async (x: Float32Array, sampleRate: number, len?: number) => {
+const inWorker = async (x: Float32Array, sampleRate: number, len?: number, minPart?: number) => {
     const w = await take();
     return new Promise<[number, number][]>((resolve, reject) => {
         w.onmessage = (e: MessageEvent<[number, number][]>) => {
@@ -33,18 +33,22 @@ const inWorker = async (x: Float32Array, sampleRate: number, len?: number) => {
             w.terminate();
             reject(e);
         };
-        w.postMessage({ channels: [x], len, sampleRate }, [x.buffer]);
+        w.postMessage({ channels: [x], len, minPart, sampleRate }, [x.buffer]);
     });
 };
 
-// Every best part of a song, strongest first (see findHooks in engine.ts).
-export const suggestHooksAsync = (buf: AudioBuffer, len?: number): Promise<[number, number][]> => {
+// Every best part of a song, strongest first (see findHooks in engine.ts); minPart = your learned part length.
+export const suggestHooksAsync = (
+    buf: AudioBuffer,
+    len?: number,
+    minPart?: number,
+): Promise<[number, number][]> => {
     // the finder works on mono at ~22 kHz anyway; sending that is a quarter of the stereo song (same answer)
     const { sr, x } = toMono(
         Array.from({ length: buf.numberOfChannels }, (_, i) => buf.getChannelData(i)),
         buf.sampleRate,
     );
-    return inWorker(x.slice(), sr, len).catch(() => suggestHooks([x], sr, len));
+    return inWorker(x.slice(), sr, len, minPart).catch(() => suggestHooks([x], sr, len, minPart));
 };
 
 // The hook alone.

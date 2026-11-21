@@ -1,13 +1,11 @@
 // BolBeats: once per finder version (the SCANNED key in auto-hooks), a little after launch, every song that has parts is
 // checked for its other best parts (and a part under 25 s for its longer find); best-parts playlists BolBeats made take
 // them in. Parts you made or edited and playlists you've changed are left as they are.
-import type { Song } from '/@/shared/types/domain-types';
 
-import { addMoreParts, isScanned } from '/@/renderer/features/best-parts/auto-hooks';
+import { addMoreParts, isScanned, songOfPart } from '/@/renderer/features/best-parts/auto-hooks';
 import { useBestPartsStore } from '/@/renderer/features/best-parts/store/best-parts.store';
 import { useAuthStore } from '/@/renderer/store/auth.store';
 import { toast } from '/@/shared/components/toast/toast';
-import { LibraryItem } from '/@/shared/types/domain-types';
 
 let running = false;
 
@@ -28,15 +26,7 @@ export const findMoreParts = async () => {
         );
         for (const [songId, p] of bySong) {
             if (isScanned(songId)) continue;
-            const song = {
-                _itemType: LibraryItem.SONG,
-                album: p.album,
-                artistName: p.artist,
-                duration: p.songDuration * 1000,
-                id: songId,
-                imageUrl: p.imageUrl,
-                name: p.title,
-            } as Song;
+            const song = songOfPart(p);
             try {
                 const { fresh, longer } = await addMoreParts(song);
                 if (fresh.length || longer.size) songs++;

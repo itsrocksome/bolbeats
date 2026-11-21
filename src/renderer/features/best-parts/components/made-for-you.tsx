@@ -15,6 +15,7 @@ import {
     type Suggestion,
     tune,
 } from '/@/renderer/features/best-parts/engine/recommend';
+import { isDisliked } from '/@/renderer/features/best-parts/engine/taste-learn';
 import { playParts } from '/@/renderer/features/best-parts/mix-player';
 import {
     type BestPart,
@@ -22,6 +23,7 @@ import {
     type PartMix,
     useBestPartsStore,
 } from '/@/renderer/features/best-parts/store/best-parts.store';
+import { useTaste } from '/@/renderer/features/best-parts/store/taste.store';
 import { formatClock } from '/@/renderer/features/best-parts/utils';
 import { mixCoverKey } from '/@/renderer/features/covers/covers.store';
 import { dayKey, useListeningStore } from '/@/renderer/features/listening/listening.store';
@@ -40,11 +42,20 @@ const length = (ps: BestPart[]) => ps.reduce((s, p) => s + p.end - p.start, 0);
 export const useMadeForYou = () => {
     const partMap = useBestPartsStore((s) => s.parts);
     const plays = useListeningStore((s) => s.parts);
+    const taste = useTaste();
     const [now] = useState(Date.now);
     return useMemo(
         () =>
-            madeForYou(Object.values(partMap), plays, dayKey(), now, (a, b) => keyFit(a, b) >= 0.7),
-        [partMap, plays, now],
+            madeForYou(
+                // BolBeats: parts you've given a thumbs down (or keep skipping) never come up; liked ones come first
+                Object.values(partMap).filter((p) => !isDisliked(taste, p.id)),
+                plays,
+                dayKey(),
+                now,
+                (a, b) => keyFit(a, b) >= 0.7,
+                new Set(Object.keys(taste.votes).filter((id) => taste.votes[id] === 1)),
+            ),
+        [partMap, plays, now, taste],
     );
 };
 
@@ -159,7 +170,8 @@ export const TuneYourOwn = () => {
     const partMap = useBestPartsStore((s) => s.parts);
     const [energy, setEnergy] = useState('0.5');
     const [minutes, setMinutes] = useState('10');
-    const parts = Object.values(partMap);
+    const taste = useTaste();
+    const parts = Object.values(partMap).filter((p) => !isDisliked(taste, p.id));
     if (parts.length < 3) return null;
     const label = { '0': 'Calm', '0.5': 'Steady', '1': 'Hype' }[energy] ?? 'Mix';
     const go = () =>

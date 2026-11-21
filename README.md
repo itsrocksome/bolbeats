@@ -45,6 +45,9 @@ fine) or pick any folder in **Your library**.
   plays just each song's best parts, then moves on. Flip it back for full songs.
 - **Make the best-parts version of any playlist** in about half a second per song, or pick the parts yourself song by
   song and let BolBeats arrange them.
+- **It learns your taste.** Thumbs up or down on the playing part, skip what you don't like, trim or stretch a part:
+  BolBeats learns how long you like your parts and where they should start, and leaves out the ones you keep skipping.
+  It all stays on your Mac.
 
 ### Mixed like a DJ
 - **Best-parts playlists** play only the parts, joined with transitions chosen from each part's tempo and key: beat blend,
@@ -52,7 +55,9 @@ fine) or pick any folder in **Your library**.
 - **Smoothest flow** puts parts in the order that joins best. **Mashup** lets songs take turns (A1, B2, A2, B1...) wherever
   they fit, and never plays a song backwards. When songs have several parts, BolBeats arranges them this way by itself.
 - Hear any join on its own, try another transition, drag parts into any order, add songs, and save the mix as a WAV file.
-- **Made for you:** Daily hooks, Turn it up, Wind down and In tune are rebuilt from your parts every day, plus a hook of the day.
+- **Share a mix.** Send a best-parts playlist with AirDrop, Messages or Mail as a tiny `.bolbeats` file. It holds no
+  audio: whoever opens it in BolBeats gets the same playlist, built from their own copies of the songs.
+- **Made for you:** Daily hooks, Turn it up, Wind down, In tune and Thumbs up are rebuilt from your parts every day, plus a hook of the day.
 
 ### Your folders are your library
 - **Every folder of songs becomes a playlist** with the folder's name. New songs dropped in join it automatically.

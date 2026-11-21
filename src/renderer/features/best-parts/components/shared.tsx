@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import styles from './best-parts.module.css';
 
 import { api } from '/@/renderer/api';
+import { MixPartVote } from '/@/renderer/features/best-parts/components/part-vote';
 import { keyName } from '/@/renderer/features/best-parts/engine/engine';
 import {
     mixElapsed,
@@ -266,6 +267,7 @@ export const MixBarControls = () => {
                     tooltip={{ label: 'Stop the best parts' }}
                     variant="subtle"
                 />
+                <MixPartVote />
             </div>
             <MixProgress e={e} />
         </div>

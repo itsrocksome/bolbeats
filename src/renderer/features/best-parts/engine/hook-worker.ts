@@ -2,8 +2,13 @@
 import { suggestHooks } from './engine';
 
 self.onmessage = (
-    e: MessageEvent<{ channels: Float32Array[]; len?: number; sampleRate: number }>,
+    e: MessageEvent<{
+        channels: Float32Array[];
+        len?: number;
+        minPart?: number;
+        sampleRate: number;
+    }>,
 ) => {
-    const { channels, len, sampleRate } = e.data;
-    self.postMessage(suggestHooks(channels, sampleRate, len));
+    const { channels, len, minPart, sampleRate } = e.data;
+    self.postMessage(suggestHooks(channels, sampleRate, len, minPart));
 };

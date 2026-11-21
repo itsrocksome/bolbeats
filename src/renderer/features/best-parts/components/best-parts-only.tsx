@@ -10,6 +10,12 @@ import styles from './now-playing-parts.module.css';
 import { suggestHooksAsync } from '/@/renderer/features/best-parts/engine/hook-async';
 import { decodeSong } from '/@/renderer/features/best-parts/mix-player';
 import { partsOfSong } from '/@/renderer/features/best-parts/store/best-parts.store';
+import {
+    disliked,
+    heardPart,
+    learnedTaste,
+    skippedPart,
+} from '/@/renderer/features/best-parts/store/taste.store';
 import { usePlayer } from '/@/renderer/features/player/context/player-context';
 import {
     usePlayerSong,
@@ -64,13 +70,15 @@ const found: Record<string, Range[]> = read(FOUND, {});
 const finding = new Map<string, Promise<Range[]>>();
 
 const rangesFor = (songId: string): Promise<Range[]> => {
-    const mine = partsOfSong(songId);
-    if (mine.length) return Promise.resolve(mine.map((p) => [p.start, p.end]));
+    // BolBeats: parts you've given a thumbs down (or keep skipping) are left out; none left means the whole song
+    const all = partsOfSong(songId);
+    const mine = all.filter((p) => !disliked(p.id));
+    if (all.length) return Promise.resolve(mine.map((p) => [p.start, p.end]));
     if (found[songId]) return Promise.resolve(found[songId]);
     let job = finding.get(songId);
     if (!job) {
         job = decodeSong(songId)
-            .then((buf) => suggestHooksAsync(buf, 22))
+            .then((buf) => suggestHooksAsync(buf, 22, learnedTaste().minPart ?? undefined))
             .then((r) => {
                 const sorted = [...r].sort(([a], [b]) => a - b);
                 found[songId] = sorted;
@@ -96,7 +104,10 @@ export const BestPartsOnly = () => {
     // 'leaving' = asked for the next song (wait for it; asking twice would skip a song)
     const where = useRef<{
         at: 'free' | 'leaving' | 'start' | number;
+        half?: number; // the playing saved part's halfway point, and where it got to (for learning your taste)
         id: string;
+        last?: number;
+        part?: string;
         seekedAt: number;
         since: number;
     }>({
@@ -126,8 +137,17 @@ export const BestPartsOnly = () => {
         const w = where.current;
         // a new queue entry, or the song started again from the top: find its first part again
         const entry = song ? `${song._uniqueId ?? ''}|${song.id}` : '';
+        // you moved on before a saved part's halfway point: a skip, which teaches BolBeats
+        if (entry !== w.id && typeof w.at === 'number' && w.part && (w.last ?? 0) < (w.half ?? 0))
+            skippedPart(w.part);
         if (entry !== w.id || (now < 1 && w.at !== 'start'))
-            Object.assign(w, { at: 'start', id: entry, seekedAt: 0, since: performance.now() });
+            Object.assign(w, {
+                at: 'start',
+                id: entry,
+                part: undefined,
+                seekedAt: 0,
+                since: performance.now(),
+            });
         // just after a song changes the player still reports the old song's position for a moment: wait for it
         if (now > 3 && performance.now() - w.since < 1500) return;
         if (!on || !song || status !== PlayerStatus.PLAYING || w.at === 'leaving') return;
@@ -135,6 +155,14 @@ export const BestPartsOnly = () => {
         const parts = ranges.parts;
         const settling = performance.now() - w.seekedAt < 1500; // our own seek hasn't landed yet
         const inside = parts.findIndex(([a, z]) => now >= a - 0.4 && now < z - 0.4);
+        const enter = (i: number) => {
+            const [a, z] = parts[i];
+            w.at = i;
+            w.half = (a + z) / 2;
+            w.part = partsOfSong(song.id).find(
+                (p) => Math.abs(p.start - a) < 0.5 && Math.abs(p.end - z) < 0.5,
+            )?.id;
+        };
         const go = (to: number | undefined) => {
             w.seekedAt = performance.now();
             if (to !== undefined) return mediaSeekToTimestamp(to);
@@ -143,18 +171,24 @@ export const BestPartsOnly = () => {
         };
         if (typeof w.at === 'number') {
             const [, z] = parts[w.at];
-            if (inside === w.at) return;
+            if (inside === w.at) {
+                w.last = now;
+                return;
+            }
             if (now >= z - 0.4 && now < z + 3) {
                 // this part is over: the next part, or the next song
+                if (w.part) heardPart(w.part);
                 const next = parts[w.at + 1];
-                w.at = 'start';
+                Object.assign(w, { at: 'start', part: undefined });
                 return go(next?.[0]);
             }
-            w.at = inside >= 0 ? inside : 'free'; // you moved
+            if (inside >= 0)
+                enter(inside); // you moved
+            else Object.assign(w, { at: 'free', part: undefined });
             return;
         }
         if (inside >= 0) {
-            w.at = inside;
+            enter(inside);
             return;
         }
         if (w.at === 'start' && !settling) {

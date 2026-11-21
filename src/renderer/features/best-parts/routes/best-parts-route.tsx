@@ -20,12 +20,14 @@ import {
     QuickKeys,
     SongMenuButton,
 } from '/@/renderer/features/best-parts/components/shared';
+import { TasteCard } from '/@/renderer/features/best-parts/components/taste-card';
 import {
     autoOrder,
     playMixById,
     playParts,
     useMixPlayer,
 } from '/@/renderer/features/best-parts/mix-player';
+import { openSharedMixFile } from '/@/renderer/features/best-parts/share-actions';
 import {
     ALL_PARTS_MIX,
     type BestPart,
@@ -161,6 +163,15 @@ const BestPartsRoute = () => {
                             Play all
                         </Button>
                         <Button
+                            leftSection={<Icon icon="upload" />}
+                            onClick={openSharedMixFile}
+                            size="md"
+                            tooltip={{ label: 'A .bolbeats file someone sent you' }}
+                            variant="default"
+                        >
+                            Open a shared playlist
+                        </Button>
+                        <Button
                             disabled={picked.size < 2}
                             leftSection={<Icon icon="add" />}
                             onClick={newMix}
@@ -186,6 +197,7 @@ const BestPartsRoute = () => {
                 </Text>
                 <MadeForYouShelf />
                 <TuneYourOwn />
+                <TasteCard />
 
                 <h2 className={styles.sectionTitle}>Your best-parts playlists</h2>
                 <div className={styles.shelf}>

@@ -41,6 +41,11 @@ nsis:
     uninstallDisplayName: ${productName}
     createDesktopShortcut: always
 
+# BolBeats: double-clicking a shared best-parts playlist opens it in BolBeats
+fileAssociations:
+    - ext: bolbeats
+      name: BolBeats playlist
+      role: Viewer
 mac:
     # BolBeats: Apple Silicon only (that is the Mac it is built and tested on)
     target:

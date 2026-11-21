@@ -1,5 +1,3 @@
-import type { Song } from '/@/shared/types/domain-types';
-
 // BolBeats: "let BolBeats pick" - finds the best parts of every song in a playlist (the hook, plus any other section
 // that sounds different and stands out nearly as much) and makes a best-parts playlist from them, for listeners who
 // love the songs but don't want to mix. Songs that already have parts keep them.
@@ -7,6 +5,7 @@ import { nanoid } from 'nanoid/non-secure';
 
 import { snapQuiet, toMono } from '/@/renderer/features/best-parts/engine/engine';
 import { suggestHooksAsync } from '/@/renderer/features/best-parts/engine/hook-async';
+import { applyLeadIn } from '/@/renderer/features/best-parts/engine/taste-learn';
 import {
     analyzeBuffer,
     autoOrder,
@@ -18,35 +17,44 @@ import {
     partsOfSong,
     useBestPartsStore,
 } from '/@/renderer/features/best-parts/store/best-parts.store';
+import { learnedTaste, useTaste } from '/@/renderer/features/best-parts/store/taste.store';
+import { LibraryItem, type Song } from '/@/shared/types/domain-types';
 
 const hooksOf = async (song: Song): Promise<BestPart[]> => {
     const buf = await decodeSong(song.id);
-    const found = await suggestHooksAsync(buf, 22);
+    const taste = learnedTaste(); // your usual part length and start, once you've edited a few
+    const found = await suggestHooksAsync(buf, 22, taste.minPart ?? undefined);
     const channels = Array.from({ length: buf.numberOfChannels }, (_, i) => buf.getChannelData(i));
     const mono = toMono(channels, buf.sampleRate);
-    return found
-        .sort(([a], [b]) => a - b)
-        .map(([a, z0], i, all) => {
-            // end on a breath too, never shorter than 8 s, never into the next part
-            const z = Math.min(
-                all[i + 1]?.[0] ?? buf.duration,
-                Math.max(a + 8, snapQuiet(mono.x, mono.sr, z0)),
-            );
-            return {
-                album: song.album,
-                analysis: analyzeBuffer(slice(buf, a, z)),
-                artist: song.artistName,
-                auto: true,
-                created: Date.now() + i,
-                end: Math.min(z, buf.duration),
-                id: nanoid(),
-                imageUrl: song.imageUrl,
-                songDuration: buf.duration,
-                songId: song.id,
-                start: a,
-                title: song.name,
-            };
-        });
+    const sorted = found.sort(([a], [b]) => a - b);
+    // start the way you do (never into the part before), then end each part before the next one starts
+    const starts = sorted.map(([a0, z0], i) => {
+        const prevEnd = sorted[i - 1]?.[1] ?? 0;
+        const [a1] = applyLeadIn([a0, z0], taste.leadIn, prevEnd);
+        return taste.leadIn ? Math.max(prevEnd, snapQuiet(mono.x, mono.sr, a1)) : a1;
+    });
+    return sorted.map(([, z0], i) => {
+        const a = starts[i];
+        // end on a breath too, never shorter than 8 s, never into the next part
+        const z = Math.min(
+            starts[i + 1] ?? buf.duration,
+            Math.max(a + 8, snapQuiet(mono.x, mono.sr, z0)),
+        );
+        return {
+            album: song.album,
+            analysis: analyzeBuffer(slice(buf, a, z)),
+            artist: song.artistName,
+            auto: true,
+            created: Date.now() + i,
+            end: Math.min(z, buf.duration),
+            id: nanoid(),
+            imageUrl: song.imageUrl,
+            songDuration: buf.duration,
+            songId: song.id,
+            start: a,
+            title: song.name,
+        };
+    });
 };
 
 // Songs already checked for every best part by this finder (parts made before 1.1 came one per song).
@@ -105,6 +113,54 @@ export const addMoreParts = async (song: Song) => {
     markScanned(song.id);
     adopt(song.id, fresh, longer);
     return { fresh, longer };
+};
+
+// A song to look at again, from one of its saved parts (enough for decoding and labelling new parts).
+export const songOfPart = (p: BestPart) =>
+    ({
+        _itemType: LibraryItem.SONG,
+        album: p.album,
+        artistName: p.artist,
+        duration: p.songDuration * 1000,
+        id: p.songId,
+        imageUrl: p.imageUrl,
+        name: p.title,
+    }) as Song;
+
+// "Re-pick with what BolBeats learned": every part BolBeats found that you haven't rated is found again with your
+// learned length and start (parts you made, edited, liked or disliked stay as they are). Returns how many changed.
+export const repickAutoParts = async (onStep?: (done: number, total: number) => void) => {
+    const open = (p: BestPart) => p.auto === true && !useTaste.getState().votes[p.id];
+    const songs = [
+        ...new Map(
+            Object.values(useBestPartsStore.getState().parts)
+                .filter(open)
+                .map((p) => [p.songId, p]),
+        ).values(),
+    ];
+    let changed = 0;
+    for (const [i, p] of songs.entries()) {
+        onStep?.(i, songs.length);
+        try {
+            const have = partsOfSong(p.songId);
+            const found = await hooksOf(songOfPart(p));
+            const fresh = found.filter((f) => !have.some((h) => overlaps(h, f)));
+            const longer = new Map<string, BestPart>();
+            for (const h of have.filter(open)) {
+                const f = found.find((x) => overlaps(h, x));
+                if (f && (Math.abs(f.start - h.start) > 0.5 || Math.abs(f.end - h.end) > 0.5))
+                    longer.set(h.id, f);
+            }
+            for (const n of [...fresh, ...longer.values()])
+                useBestPartsStore.getState().savePart(n);
+            adopt(p.songId, fresh, longer);
+            changed += fresh.length + longer.size;
+        } catch {
+            // the song is gone or can't be read: leave its parts
+        }
+    }
+    onStep?.(songs.length, songs.length);
+    return changed;
 };
 
 // Best-parts playlists BolBeats made (never ones you've changed) take a song's new parts, re-arranged where they fit;

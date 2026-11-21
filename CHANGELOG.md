@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.4.0
+
+- BolBeats learns your taste in best parts. Give the playing part a thumbs up or down from the player bar, skip what
+  you don't like, or trim and stretch a part it found: after a few edits, new parts follow your usual length and start.
+  Thumbs down, or a part you keep skipping, is left out of what BolBeats plays for you; thumbs up parts get their own
+  made-for-you playlist. Everything it learns stays on your Mac.
+- "What BolBeats has learned" on the Best parts page says it in plain words, can re-pick the parts BolBeats found to
+  fit, and can forget it all. Parts you made, edited or rated are never changed.
+- Share a best-parts playlist: Share or Save playlist file in its menu makes a tiny .bolbeats file (no audio inside).
+  Open it with Open a shared playlist, or double-click it, and BolBeats builds the same playlist from your own songs,
+  keeping the joins and the cover, and tells you which songs you don't have.
+
 ## 1.3.0
 
 - Longer best parts: a part now starts with a phrase of build-up, plays the whole hook, and carries on through what

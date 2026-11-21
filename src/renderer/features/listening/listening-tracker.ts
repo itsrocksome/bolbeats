@@ -1,5 +1,6 @@
 // BolBeats: counts listening time, songs, best-parts playlists and parts as they play. Imported once by app.tsx.
 import { useMixPlayer } from '/@/renderer/features/best-parts/mix-player';
+import { heardPart } from '/@/renderer/features/best-parts/store/taste.store';
 import { counted, listened } from '/@/renderer/features/listening/listening.store';
 import { usePlayerStoreBase } from '/@/renderer/store/player.store';
 import { PlayerStatus } from '/@/shared/types/types';
@@ -24,4 +25,7 @@ useMixPlayer.subscribe((s, prev) => {
     if (s.status === 'playing' && prev.status === 'loading' && s.mixId) counted('mixes', s.mixId);
     if (s.status !== 'idle' && s.index >= 0 && s.index !== prev.index)
         counted('parts', s.partIds[s.index]);
+    // BolBeats: the mix moved on by itself, so the part before was heard to the end (it teaches your taste)
+    if (s.status === 'playing' && s.partIds === prev.partIds && s.index === prev.index + 1)
+        heardPart(prev.partIds[prev.index]);
 });

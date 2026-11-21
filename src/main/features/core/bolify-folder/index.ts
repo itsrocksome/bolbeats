@@ -19,6 +19,8 @@ import { currentMusicFolder } from '/@/main/features/core/local-library';
 import { readBasicTags } from '/@/main/features/core/tag-editor/taglib-service';
 import log from '/@/main/logger';
 
+import './share';
+
 const BACKUP = 'bolbeats-backup.json';
 // Earlier names of the folder and backup (the app was called Bolify); read when the new ones aren't there.
 const OLD_DIR = 'Bolify';

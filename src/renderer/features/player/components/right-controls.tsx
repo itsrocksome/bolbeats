@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { BestPartsOnly } from '/@/renderer/features/best-parts/components/best-parts-only';
 import { MarkMomentButton } from '/@/renderer/features/best-parts/components/mark-moment-button';
 import { JumpToPart } from '/@/renderer/features/best-parts/components/now-playing-parts';
+import { PlayingPartVote } from '/@/renderer/features/best-parts/components/part-vote';
 import { PopoverPlayQueue } from '/@/renderer/features/now-playing/components/popover-play-queue';
 import { DlnaVolumeButton } from '/@/renderer/features/player/components/dlna/volume-button';
 import { PlayerConfig } from '/@/renderer/features/player/components/player-config';
@@ -96,6 +97,7 @@ export const RightControls = () => {
             <Group h="calc(100% / 3)">
                 <BestPartsOnly />
                 <JumpToPart />
+                <PlayingPartVote />
                 {showRatings && <RatingButton />}
                 <AutoDJButton />
             </Group>

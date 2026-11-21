@@ -134,6 +134,8 @@ import {
     LuSunrise,
     LuSunset,
     LuTable,
+    LuThumbsDown,
+    LuThumbsUp,
     LuTimer,
     LuTimerOff,
     LuTrash,
@@ -386,6 +388,9 @@ export const AppIcon = {
     success: LuCircleCheck,
     themeDark: LuMoon,
     themeLight: LuSun,
+    // BolBeats: rate the playing best part
+    thumbsDown: LuThumbsDown,
+    thumbsUp: LuThumbsUp,
     timeAfternoon: LuSun, // BolBeats: the five parts of a listening day
     timeEvening: LuSunset,
     timeLateNight: LuMoonStar,

@@ -20,9 +20,11 @@ import {
 } from '/@/renderer/features/best-parts/engine/engine';
 import { cutMp3, indexMp3 } from '/@/renderer/features/best-parts/mp3-cut';
 import {
+    ALL_PARTS_MIX,
     type BestPart,
     useBestPartsStore,
 } from '/@/renderer/features/best-parts/store/best-parts.store';
+import { disliked, skippedPart } from '/@/renderer/features/best-parts/store/taste.store';
 import { formatClock } from '/@/renderer/features/best-parts/utils';
 import { useAuthStore } from '/@/renderer/store/auth.store';
 import {
@@ -385,7 +387,11 @@ export const playMixById = (mixId: string, from = 0) => {
     const { mixes, parts } = useBestPartsStore.getState();
     const mix = mixes[mixId];
     if (!mix) return false;
-    const list = mix.partIds.map((id) => parts[id]).filter(Boolean);
+    // BolBeats: playlists BolBeats made (and All best parts) leave out parts you've given a thumbs down or keep skipping;
+    // a playlist you made plays what you put in it
+    const list = mix.partIds
+        .map((id) => parts[id])
+        .filter((p) => p && (!(mix.auto || mixId === ALL_PARTS_MIX) || !disliked(p.id)));
     if (!list.length) return false;
     const at = Math.max(0, Math.min(from, list.length - 1));
     playParts(list.slice(at), mix.picks, { label: mix.name, mixId, offset: at });
@@ -401,6 +407,10 @@ export const skipMixPart = (d: -1 | 1) => {
     // "previous" a few seconds into a part goes back to its start, like a normal player
     const back = d < 0 && mixElapsed() - (s.at[s.index] ?? 0) > 3 ? 0 : d;
     if (here < 0 || here + back < 0 || here + back >= ids.length) return;
+    // moving on before a part's halfway point teaches BolBeats you'd rather not hear it
+    const part = useBestPartsStore.getState().parts[s.partIds[s.index]];
+    if (d > 0 && part && mixElapsed() - (s.at[s.index] ?? 0) < (part.end - part.start) / 2)
+        skippedPart(part.id);
     playMixById(s.mixId, here + back);
 };
 

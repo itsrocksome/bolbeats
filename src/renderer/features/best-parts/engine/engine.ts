@@ -435,6 +435,7 @@ export function findHooks(
     len = 24,
     max = Infinity,
     stand = 0.2,
+    minPart = MIN_PART, // BolBeats: your learned part length, when there is one (taste-learn.ts)
 ): { median: number; parts: [number, number][]; scores: number[] } {
     const m = toMono(channels, sampleRate);
     const half = new Float32Array(m.x.length >> 1);
@@ -525,13 +526,13 @@ export function findHooks(
         while (phrases > 1 && start + phrases * phrase > stopAt + phrase / 4) phrases--;
         // too short: one phrase of build-up before it, then what follows, then more before if still short
         const before = () => {
-            const ok = phrases * phrase < MIN_PART && start - phrase >= notBefore - 0.01;
+            const ok = phrases * phrase < minPart && start - phrase >= notBefore - 0.01;
             if (ok) [start, phrases] = [Math.max(0, start - phrase), phrases + 1];
             return ok;
         };
         before();
         while (
-            phrases * phrase < MIN_PART &&
+            phrases * phrase < minPart &&
             start + (phrases + 1) * phrase <= Math.min(duration, stopAt) + phrase / 4
         )
             phrases++;
@@ -594,7 +595,7 @@ export function findHooks(
         const next = taken.filter(([a]) => a > t).map(([a]) => a * bs);
         const prev = taken.filter(([, z]) => z <= t).map(([, z]) => z * bs);
         const part = refine(t, Math.min(duration, ...next), Math.max(0, ...prev));
-        if (part.end - part.start < MIN_PART - 0.5) continue;
+        if (part.end - part.start < minPart - 0.5) continue;
         // a part after the hook has to be one of the song's big moments: no quieter than the song usually is
         if (mean(db.slice(Math.round(part.start / bs), Math.round(part.end / bs))) < dbTypical - 1)
             continue;
@@ -634,7 +635,7 @@ export function findHooks(
             // split on the phrase line nearest the change
             const k = Math.max(1, Math.round((cut * bs - p.start) / phrase));
             const at = p.start + k * phrase;
-            if (at - p.start >= MIN_PART - 0.5 && p.end - at >= MIN_PART - 0.5) {
+            if (at - p.start >= minPart - 0.5 && p.end - at >= minPart - 0.5) {
                 out.push(
                     { end: at, score: p.score, start: p.start },
                     { end: p.end, score: p.score, start: at },
@@ -696,8 +697,9 @@ export function suggestHooks(
     channels: Float32Array[],
     sampleRate: number,
     len = 24,
+    minPart?: number,
 ): [number, number][] {
-    return findHooks(channels, sampleRate, len).parts;
+    return findHooks(channels, sampleRate, len, Infinity, undefined, minPart).parts;
 }
 
 // ---------------- mixing ----------------
