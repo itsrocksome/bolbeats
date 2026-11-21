@@ -21,9 +21,22 @@
     border-right: 1px solid var(--theme-colors-border);
 }
 
-@container (min-width: $mantine-breakpoint-xs) {
+/* BolBeats: an open filter panel floats over the list when there isn't room for both (it used to squeeze the table
+   to about 300px); from 900px it sits beside the list */
+.container[data-sidebar-open='true'] .sidebar-container {
+    position: absolute;
+    inset: 0 auto 0 0;
+    z-index: 5;
+    display: block;
+    background: var(--theme-colors-background);
+    box-shadow: 0 12px 40px rgb(0 0 0 / 45%);
+}
+
+@container (min-width: 900px) {
     .container[data-sidebar-open='true'] .sidebar-container {
-        display: block;
+        position: relative;
+        inset: auto;
+        box-shadow: none;
     }
 
     @container (min-width: $mantine-breakpoint-lg) {

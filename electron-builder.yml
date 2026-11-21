@@ -8,6 +8,13 @@ directories:
 files:
     - 'out/**/*'
     - 'package.json'
+    # BolBeats: debugging maps are for development only (about 50 MB)
+    - '!**/*.map'
+# BolBeats: the app is in English; Electron ships 220 interface language packs otherwise (about 45 MB)
+electronLanguages:
+    - en
+    - en_GB
+    - hi
 extraResources:
     - assets/**
     # BolBeats: the private on-device library server

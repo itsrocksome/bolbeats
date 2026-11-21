@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.3.0
+
+- Longer best parts: a part now starts with a phrase of build-up, plays the whole hook, and carries on through what
+  follows while it is just as big. Every part is 25 seconds or more (on 92 test songs the typical part went from 22 to
+  31 seconds).
+- More songs get a second best part, and quiet intros or verses are no longer picked as one.
+- Your older parts are checked once in the background: short parts BolBeats found are lengthened, and any other short
+  part is only ever extended around itself, so nothing you picked is lost. Parts you make or edit are never changed.
+- A smaller app: 395 MB installed instead of 657 MB, and a 179 MB download.
+- Artists show the cover of one of their songs instead of a blank picture.
+- Song titles get more room in track lists, and the filter panel floats over the list in small windows.
+- Music news opens in under a second after the first visit.
+- Fixed: the player bar showed an old time when nothing was playing.
+
 ## 1.2.0
 
 - Best parts only: one switch in the player bar, and whatever you play (an album, an artist, search, your queue) plays

@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 
 import { parseTableColumns } from '/@/renderer/components/item-list/helpers/parse-table-columns';
 import { ItemTableListColumnConfig } from '/@/renderer/components/item-list/types';
+import { TableColumn } from '/@/shared/types/types';
 
 export const useTableColumnModel = ({
     autoFitColumns,
@@ -18,6 +19,13 @@ export const useTableColumnModel = ({
 
     const calculatedColumnWidths = useMemo(() => {
         const baseWidths = parsedColumns.map((c) => c.width);
+        // BolBeats: when fitting, the title gets a double share (it holds the cover and two lines of text; at equal
+        // shares it wrapped to three lines next to a half-empty Genre column)
+        const share = parsedColumns.map(
+            (c, idx) =>
+                baseWidths[idx] *
+                (c.id === TableColumn.TITLE || c.id === TableColumn.TITLE_COMBINED ? 2 : 1),
+        );
 
         // When autoSizeColumns is enabled, treat unpinned widths as proportions and scale to fit container.
         // Pinned columns keep their base width so they don't get squeezed.
@@ -34,7 +42,7 @@ export const useTableColumnModel = ({
             });
 
             const unpinnedReferenceWidth = unpinnedIndices.reduce(
-                (sum, idx) => sum + baseWidths[idx],
+                (sum, idx) => sum + share[idx],
                 0,
             );
             const availableForUnpinned = totalContainerWidth - pinnedWidth;
@@ -48,7 +56,7 @@ export const useTableColumnModel = ({
                 if (parsedColumns[idx].pinned !== null) {
                     return Math.round(width);
                 }
-                return Math.round(width * scaleFactor);
+                return Math.round(share[idx] * scaleFactor);
             });
 
             // Adjust for rounding errors on unpinned columns only

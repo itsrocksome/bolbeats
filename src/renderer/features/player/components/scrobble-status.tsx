@@ -8,6 +8,7 @@ import {
 import {
     ScrobbleMinimumMode,
     useAppStore,
+    usePlayerSong,
     usePlayerTimestamp,
     useScrobbleDebugSnapshot,
     useSettingsStore,
@@ -45,7 +46,9 @@ export const ScrobbleStatus = () => {
     const scrobbleMinimumMode = useSettingsStore((state) => state.playback.scrobble.minimumMode);
     const privateMode = useAppStore((state) => state.privateMode);
     const snapshot = useScrobbleDebugSnapshot();
-    const formattedTime = formatDuration(usePlayerTimestamp() * 1000 || 0);
+    const timestamp = usePlayerTimestamp();
+    // BolBeats: with nothing to play, the bar showed the last song's time (0:36 / 0:00)
+    const formattedTime = formatDuration((usePlayerSong() ? timestamp : 0) * 1000 || 0);
 
     const hookInactive = !scrobbleEnabled || privateMode;
 

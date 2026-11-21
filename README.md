@@ -37,7 +37,7 @@ fine) or pick any folder in **Your library**.
 - **Every best part of every song, found automatically.** BolBeats listens to each song and finds its hook (usually the
   chorus: the section that repeats, is loudest and busiest), then every other section that sounds different and stands
   out nearly as much, like a drop or a second hook. Some songs get one part, some get several; the song decides. Parts
-  are cut on the beat at a quiet moment and are as long as the section really is (15 seconds or more, no upper limit),
+  are cut on the beat at a quiet moment and are as long as the section really is (25 seconds or more, no upper limit),
   rounded to whole musical phrases.
 - **Or mark your own.** Press <kbd>B</kbd> while a song plays to mark where your part starts and again where it ends, or drag
   across the song's waveform. A song can have as many parts as you like.

@@ -33,6 +33,8 @@ import { Text } from '/@/shared/components/text/text';
 const FOLLOWED = 'hookline_followed_artists'; // your favourite artists
 const CACHE = 'hookline_release_cache';
 const TTL = 12 * 60 * 60 * 1000;
+const PER_ARTIST = 'hookline_artist_releases';
+const PER_UPCOMING = 'hookline_artist_upcoming';
 const DAY = 86_400_000;
 
 const load = <T,>(k: string, fallback: T): T => {
@@ -122,16 +124,46 @@ const NewsRoute = () => {
             if (!force && cache && cache.key === key && Date.now() - cache.at < TTL)
                 return setReleases(cache.data);
             setLoading(true);
-            const store: FeedRelease[] = [];
-            for (const a of artists)
-                store.push(...(await window.api.onlineLookup.artistReleases(a).catch(() => [])));
+            // BolBeats: each artist's releases are kept 12 h on their own, so a new artist in the library costs one
+            // lookup, not 60; the rest are asked 3 at a time and shown as they come. A failed lookup isn't kept.
+            const each = load<Record<string, { at: number; data: FeedRelease[] }>>(PER_ARTIST, {});
+            const fresh = (a: string) => !force && each[a] && Date.now() - each[a].at < TTL;
+            const gather = () => artists.flatMap((a) => each[a]?.data ?? []);
+            const todo = artists.filter((a) => !fresh(a));
+            await Promise.all(
+                [0, 1, 2].map(async () => {
+                    for (let a = todo.shift(); a !== undefined; a = todo.shift()) {
+                        const got = await window.api.onlineLookup
+                            .artistReleases(a)
+                            .catch(() => null);
+                        if (got) each[a] = { at: Date.now(), data: got };
+                        setReleases(mergeReleases([gather()]));
+                    }
+                }),
+            );
+            try {
+                localStorage.setItem(PER_ARTIST, JSON.stringify(each));
+            } catch {
+                // storage full: they are just asked again next time
+            }
+            const store = gather();
             setReleases(mergeReleases([store]));
-            // Announced releases for favourites only: MusicBrainz allows one question a second.
-            const announced: FeedRelease[] = [];
-            for (const a of favourites.slice(0, 20))
-                announced.push(
-                    ...(await window.api.onlineLookup.artistUpcoming(a).catch(() => [])),
-                );
+            // Announced releases for favourites only: MusicBrainz allows one question a second (kept 12 h each too).
+            const soon = load<Record<string, { at: number; data: FeedRelease[] }>>(
+                PER_UPCOMING,
+                {},
+            );
+            for (const a of favourites.slice(0, 20)) {
+                if (!force && soon[a] && Date.now() - soon[a].at < TTL) continue;
+                const got = await window.api.onlineLookup.artistUpcoming(a).catch(() => null);
+                if (got) soon[a] = { at: Date.now(), data: got };
+            }
+            try {
+                localStorage.setItem(PER_UPCOMING, JSON.stringify(soon));
+            } catch {
+                // asked again next time
+            }
+            const announced = favourites.slice(0, 20).flatMap((a) => soon[a]?.data ?? []);
             const all = mergeReleases([store, announced]);
             localStorage.setItem(CACHE, JSON.stringify({ at: Date.now(), data: all, key }));
             setReleases(all);

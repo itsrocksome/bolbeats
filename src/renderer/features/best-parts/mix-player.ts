@@ -517,6 +517,7 @@ export const toggleMarkMoment = async () => {
             album: currentSong.album,
             analysis: analyzeBuffer(slice(buf, a, z)),
             artist: currentSong.artistName,
+            auto: false, // BolBeats: yours; its finder never changes it
             created: Date.now(),
             end: z,
             id: nanoid(),

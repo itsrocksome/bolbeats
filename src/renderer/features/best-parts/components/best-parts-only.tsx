@@ -21,7 +21,7 @@ import { toast } from '/@/shared/components/toast/toast';
 import { PlayerStatus } from '/@/shared/types/types';
 
 const ON = 'hookline_best_parts_only';
-const FOUND = 'hookline_found_ranges'; // song id -> parts found for playing (not your Best parts)
+const FOUND = 'hookline_found_ranges_v2'; // song id -> parts found for playing (not your Best parts); v2: 25 s+ parts
 
 const read = <T,>(key: string, fallback: T): T => {
     try {
@@ -55,6 +55,11 @@ export const toggleBestPartsOnly = () => {
 };
 
 type Range = [number, number];
+try {
+    localStorage.removeItem('hookline_found_ranges'); // BolBeats: the cache from before 25 s parts
+} catch {
+    // storage blocked
+}
 const found: Record<string, Range[]> = read(FOUND, {});
 const finding = new Map<string, Promise<Range[]>>();
 

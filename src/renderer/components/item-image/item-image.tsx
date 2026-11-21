@@ -1,4 +1,4 @@
-import { memo, useMemo } from 'react';
+import { memo, useEffect, useMemo } from 'react';
 import z from 'zod';
 
 import { api } from '/@/renderer/api';
@@ -7,6 +7,10 @@ import {
     playlistIdFromImageId,
     useCovers,
 } from '/@/renderer/features/covers/covers.store';
+import {
+    buildArtistCovers,
+    useArtistCovers,
+} from '/@/renderer/features/library-tools/artist-covers';
 import {
     GeneralSettingsSchema,
     getServerById,
@@ -60,19 +64,33 @@ const BaseItemImage = (
     const imagePlaceholderPriority = useImagePlaceholderPriority();
     const hashUrl = useImageHashUrl(thumbHash, blurHash, dominantColor, imagePlaceholderPriority);
 
+    // BolBeats: an artist without a picture of their own (none uploaded) shows the cover of one of their songs
+    const isArtist =
+        props.itemType === LibraryItem.ALBUM_ARTIST || props.itemType === LibraryItem.ARTIST;
+    const artistCover = useArtistCovers((s) =>
+        isArtist && props.id && !src && !props.id.includes('&_=')
+            ? s.byArtist[props.id]
+            : undefined,
+    );
+    useEffect(() => {
+        if (isArtist) buildArtistCovers();
+    }, [isArtist]);
+    const imageId = artistCover ?? props.id;
+    const imageType = artistCover ? LibraryItem.SONG : props.itemType;
+
     const imageUrl = useItemImageUrl({
-        id: props.id,
+        id: imageId,
         imageUrl: src,
-        itemType: props.itemType,
+        itemType: imageType,
         serverId: serverId || undefined,
         size,
         type: props.type,
     });
 
     const imageRequest = useItemImageRequest({
-        id: props.id,
+        id: imageId,
         imageUrl: src,
-        itemType: props.itemType,
+        itemType: imageType,
         serverId: serverId || undefined,
         size,
         type: props.type,

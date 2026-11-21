@@ -7,7 +7,8 @@ import { validateHTMLColor } from 'validate-color';
 
 import log from '/@/main/logger';
 
-const isDevelopment = process.env.NODE_ENV === 'development';
+// BolBeats: DEBUG_PROD too, like main/index.ts; otherwise a packaged test run opened the real library
+const isDevelopment = process.env.NODE_ENV === 'development' || process.env.DEBUG_PROD === 'true';
 
 const defaultUserDataPath = app.getPath('userData');
 const userDataPath = isDevelopment

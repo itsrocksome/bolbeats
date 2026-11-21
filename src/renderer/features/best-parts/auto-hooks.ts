@@ -36,6 +36,7 @@ const hooksOf = async (song: Song): Promise<BestPart[]> => {
                 album: song.album,
                 analysis: analyzeBuffer(slice(buf, a, z)),
                 artist: song.artistName,
+                auto: true,
                 created: Date.now() + i,
                 end: Math.min(z, buf.duration),
                 id: nanoid(),
@@ -49,7 +50,7 @@ const hooksOf = async (song: Song): Promise<BestPart[]> => {
 };
 
 // Songs already checked for every best part by this finder (parts made before 1.1 came one per song).
-const SCANNED = 'hookline_scanned_v2';
+const SCANNED = 'hookline_scanned_v3'; // v3: parts of 25 s or more (1.3.0), every song is checked once more
 const scannedSongs = (): Record<string, 1> => {
     try {
         return JSON.parse(localStorage.getItem(SCANNED) ?? '{}');
@@ -75,12 +76,30 @@ export const addMoreParts = async (song: Song) => {
     const have = partsOfSong(song.id);
     const found = await hooksOf(song);
     const fresh = found.filter((f) => !have.some((h) => overlaps(h, f)));
+    // a short old part gives way to its longer find. A part from before parts were tagged (maybe yours) is joined with
+    // the find instead, so everything you picked stays in it; parts you made or edited (auto: false) are left alone.
     const longer = new Map<string, BestPart>();
     for (const h of have) {
-        const f = found.find(
-            (x) => overlaps(h, x) && h.end - h.start < 15 && x.end - x.start > h.end - h.start,
+        if (h.auto === false || h.end - h.start >= 24.5) continue;
+        const f = found.find((x) => overlaps(h, x) && x.end - x.start > h.end - h.start);
+        if (!f) continue;
+        if (h.auto) {
+            longer.set(h.id, f);
+            continue;
+        }
+        // joined, up to (never into) the parts next to it
+        const others = have.filter((o) => o.id !== h.id);
+        const start = Math.max(
+            Math.min(h.start, f.start),
+            ...others.filter((o) => o.end <= h.start + 0.01).map((o) => o.end),
         );
-        if (f) longer.set(h.id, f);
+        const end = Math.min(
+            Math.max(h.end, f.end),
+            ...others.filter((o) => o.start >= h.end - 0.01).map((o) => o.start),
+        );
+        if (end - start <= h.end - h.start + 1) continue;
+        const buf = await decodeSong(song.id); // just decoded by hooksOf: cached
+        longer.set(h.id, { ...f, analysis: analyzeBuffer(slice(buf, start, end)), end, start });
     }
     for (const p of [...fresh, ...longer.values()]) useBestPartsStore.getState().savePart(p);
     markScanned(song.id);

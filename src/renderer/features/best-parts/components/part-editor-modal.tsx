@@ -310,6 +310,7 @@ export const PartEditor = ({
             album: song.album,
             analysis: analyzeBuffer(slice(buf!, a, z)),
             artist: song.artistName,
+            auto: false, // BolBeats: yours; its finder never changes it
             created: useBestPartsStore.getState().parts[partId]?.created ?? Date.now(),
             end: z,
             id: partId,

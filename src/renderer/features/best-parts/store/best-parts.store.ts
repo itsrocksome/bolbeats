@@ -12,6 +12,7 @@ export type BestPart = {
     album: null | string;
     analysis: Analysis;
     artist: string;
+    auto?: boolean; // BolBeats found it (editing it by hand makes it yours)
     created: number;
     end: number; // seconds into the song
     id: string;

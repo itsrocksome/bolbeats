@@ -77,8 +77,9 @@ const intro: Sec = { chords: [Am, F], gain: 0.25, sec: 8 };
 const bridge: Sec = { chords: [Dm, Em], gain: 0.6, melody: [62, 64, 65, 67], sec: 12 };
 const outro: Sec = { chords: [Am, F], gain: 0.3, sec: 10 };
 
+// a part holds the whole chorus, starting on it or at most one phrase (8 s here) before it, the build-up
 const inside = (a: number, b: number, starts: number[], len: number) =>
-    starts.some((s) => Math.abs(a - s) <= 1 && Math.abs(b - (s + len)) <= 3);
+    starts.some((s) => a >= s - 9 && a <= s + 1 && b >= s + len - 3);
 
 test('finds the chorus of a verse-chorus song, starting where the chorus starts', () => {
     const song = [intro, verse, chorus, verse, chorus, bridge, chorus, outro];
@@ -141,10 +142,10 @@ test('a long quiet intro is never the hook, and the 22 s default still lands on 
     const [a, b] = suggestHook([x], SR, 22);
     assert.ok(a >= 20, `picked ${a.toFixed(1)} inside the intro`);
     assert.ok(
-        choruses.some((s) => a >= s - 1.5 && a < s + 16),
+        choruses.some((s) => a >= s - 9.5 && a < s + 16),
         `picked ${a.toFixed(1)}-${b.toFixed(1)}, choruses at ${choruses.join(', ')}`,
     );
-    assert.ok(b - a >= 15 && b - a <= 32, `length ${(b - a).toFixed(1)}`);
+    assert.ok(b - a >= 24.5 && b - a <= 40, `length ${(b - a).toFixed(1)}`);
 });
 
 test('short songs still get a sensible part inside the song', () => {
@@ -180,15 +181,16 @@ test('a chorus always followed by the same verse still ends with the chorus', ()
         const choruses = song.map((s, i) => (s === c ? at[i] : -1)).filter((t) => t >= 0);
         const [a, b] = suggestHook([x], SR, 22);
         const msg = `${len} s chorus: picked ${a.toFixed(1)}-${b.toFixed(1)}, choruses at ${choruses.join(', ')}`;
+        // the whole chorus, never the whole verse (16 s) before it, and never much more than the minimum asks for
         assert.ok(
-            choruses.some((s) => Math.abs(b - (s + len)) <= 3),
+            choruses.some((s) => a > s - 16 && a <= s + 1 && b >= s + len - 3),
             msg,
         );
-        assert.ok(b - a <= len + 10, msg); // never a whole verse (16 s) extra
+        assert.ok(b - a <= Math.max(len, 25) + 10, msg);
     }
 });
 
-test('a song with two different hooks gets both as best parts; a song with one gets one', () => {
+test('a song with two different hooks gets both into its best parts; a song with one gets one part', () => {
     // the drop: its own chords and melody, loud and busy, and it comes back too
     const drop: Sec = {
         chords: [Em, Dm, Em, Dm],
@@ -205,12 +207,9 @@ test('a song with two different hooks gets both as best parts; a song with one g
         two.map((s, i) => (s === sec ? at[i] : -1)).filter((t) => t >= 0);
     const result = findHooks([x], SR, 16);
     const found = result.parts;
+    // each hook is played whole by some part (back to back in one part, or as two parts)
     const lands = (starts: number[]) =>
-        found.some(([a]) => starts.some((s) => a >= s - 1.5 && a < s + 8));
-    assert.ok(
-        found.length >= 2,
-        `found ${found.map(([a, b]) => `${a.toFixed(1)}-${b.toFixed(1)}`).join(', ')} (median ${result.median.toFixed(2)}, scores ${result.scores.map((v) => v.toFixed(2)).join(' ')})`,
-    );
+        found.some(([a, b]) => starts.some((s) => a <= s + 1.5 && b >= s + 13));
     assert.ok(
         lands(startsOf(hook)) && lands(startsOf(drop)),
         `found ${found.map(([a, b]) => `${a.toFixed(1)}-${b.toFixed(1)}`).join(', ')}`,
@@ -223,7 +222,7 @@ test('a song with two different hooks gets both as best parts; a song with one g
             );
 
     for (const [a, b] of found)
-        assert.ok(b - a >= 14.5, `a part of ${(b - a).toFixed(1)} s is too short`);
+        assert.ok(b - a >= 24.5, `a part of ${(b - a).toFixed(1)} s is too short`);
 
     const one = build([intro, verse, chorus, verse, chorus, bridge, chorus, outro]);
     assert.equal(findHooks([one.x], SR, 16).parts.length, 1);

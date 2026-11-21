@@ -313,7 +313,7 @@ export function snapQuiet(x: Float32Array, sr: number, t: number, win = 0.25) {
 // 3. plus how loud and busy the whole window is, a bonus for starting where a section starts, minus intro and fade-out;
 // 4. start and end moved to the nearest section change, then onto the beat and a breath.
 const BLOCK = 0.5;
-const MIN_PART = 15; // seconds: shorter parts feel cut off
+const MIN_PART = 25; // seconds: shorter parts felt cut off (on 92 real songs: median part 22 s at 15, 31 s at 25)
 
 const unit = (v: number[]) => {
     const n = Math.hypot(...v) || 1;
@@ -425,15 +425,16 @@ const nearestPeak = (nov: number[], target: number, lo: number, hi: number) => {
 
 // BolBeats: the best parts of a song, strongest first. The first is the hook (usually the chorus); after it, every
 // section that sounds different (not another repeat of a part already picked, never overlapping one) and stands out
-// from the song at least `stand` as much as the hook does (0.4 = 40% of the way from the song's typical moment to its hook),
-// like a drop, a post-chorus or a second hook. How many is up to the song: on 36 real songs, about 1 in 3 had two. `max` only
-// exists so callers can ask for the hook alone.
+// from the song at least `stand` as much as the hook does (0.2 = 20% of the way from the song's typical moment to its
+// hook) and is no quieter than the song usually is, like a drop, a post-chorus or a second hook. How many is up to the
+// song: on 92 real songs, 40 got two or more (31 at the old 40% with no loudness check, and more quiet intros).
+// `max` only exists so callers can ask for the hook alone.
 export function findHooks(
     channels: Float32Array[],
     sampleRate: number,
     len = 24,
     max = Infinity,
-    stand = 0.4,
+    stand = 0.2,
 ): { median: number; parts: [number, number][]; scores: number[] } {
     const m = toMono(channels, sampleRate);
     const half = new Float32Array(m.x.length >> 1);
@@ -493,17 +494,28 @@ export function findHooks(
     const phrase = (16 * 60) / bpm;
 
     // One part from a starting block: start on the section change, last as long as the section keeps repeating
-    // (no upper limit: a part can be a whole section), end at the first strong section change inside it, and round UP
-    // to whole phrases so the part finishes its line (a phrase barely begun is dropped). A part shorter than 15 s takes
-    // in the phrase before it (the build-up), or the one after, without running into `notBefore`..`stopAt` (other
-    // parts). The end lands on a breath.
+    // (no upper limit: a part can be a whole section), end at the first strong section change inside it (or carry on
+    // through a following section just as loud), and round UP to whole phrases so the part finishes its line (a phrase
+    // barely begun is dropped). A part shorter than MIN_PART takes in the phrase before it (the build-up), then what
+    // follows, without running into `notBefore`..`stopAt` (other parts). The end lands on a breath.
     const refine = (t: number, stopAt: number, notBefore = 0) => {
         const a = nearestPeak(sharp, t, t - 6, t + 6);
         const run = repeatLength(S, a, min, n);
         let cut = -1;
         for (let i = a + min; run && i <= Math.min(n - 2, a + run + 4) && cut < 0; i++)
             if (nov[i] >= strong && nov[i] >= nov[i - 1] && nov[i] >= nov[i + 1]) cut = i;
-        const goal = cut >= 0 ? cut : a + run;
+        let goal = cut >= 0 ? cut : a + run;
+        // run on through the next section while it still repeats with the part and is as loud (a post-chorus, a
+        // second hook line): a quieter verse ends it
+        const loud = (x: number, y: number) => mean(db.slice(x, Math.max(x + 1, y)));
+        while (cut >= 0 && goal < a + run - 4) {
+            let next = -1;
+            for (let i = goal + 8; i <= Math.min(n - 2, a + run + 4) && next < 0; i++)
+                if (nov[i] >= strong && nov[i] >= nov[i - 1] && nov[i] >= nov[i + 1]) next = i;
+            if (next < 0) next = Math.min(n - 1, a + run);
+            if (loud(goal, next) < loud(a, goal) - 1.5) break;
+            goal = next;
+        }
         const z = run
             ? nearestPeak(sharp, goal, goal - 4, goal + 4)
             : nearestPeak(sharp, a + L, a + Math.round(L * 0.7), a + Math.round(L * 1.4));
@@ -511,15 +523,19 @@ export function findHooks(
         let phrases = Math.max(2, Math.ceil(((z - a) * bs) / phrase - 0.25));
         // a phrase that runs a little into the next picked section is kept and ends where that section starts
         while (phrases > 1 && start + phrases * phrase > stopAt + phrase / 4) phrases--;
-        while (phrases * phrase < MIN_PART && start - phrase >= notBefore - 0.01) {
-            start = Math.max(0, start - phrase);
-            phrases++;
-        }
+        // too short: one phrase of build-up before it, then what follows, then more before if still short
+        const before = () => {
+            const ok = phrases * phrase < MIN_PART && start - phrase >= notBefore - 0.01;
+            if (ok) [start, phrases] = [Math.max(0, start - phrase), phrases + 1];
+            return ok;
+        };
+        before();
         while (
             phrases * phrase < MIN_PART &&
             start + (phrases + 1) * phrase <= Math.min(duration, stopAt) + phrase / 4
         )
             phrases++;
+        while (before());
         const end = Math.min(
             duration,
             stopAt,
@@ -563,6 +579,7 @@ export function findHooks(
     const picked = [{ ...first, score: scores[t0], zb: Math.round(first.end / bs) }];
     take(first.a, picked[0].zb);
     const typical = median(scores);
+    const dbTypical = median(db);
     const order = scores.map((v, t) => [v, t] as const).sort((x, y) => y[0] - x[0]);
     for (const [v, t] of order) {
         if (
@@ -578,6 +595,9 @@ export function findHooks(
         const prev = taken.filter(([, z]) => z <= t).map(([, z]) => z * bs);
         const part = refine(t, Math.min(duration, ...next), Math.max(0, ...prev));
         if (part.end - part.start < MIN_PART - 0.5) continue;
+        // a part after the hook has to be one of the song's big moments: no quieter than the song usually is
+        if (mean(db.slice(Math.round(part.start / bs), Math.round(part.end / bs))) < dbTypical - 1)
+            continue;
         picked.push({ ...part, score: v, zb: Math.round(part.end / bs) });
         take(part.a, picked[picked.length - 1].zb);
     }

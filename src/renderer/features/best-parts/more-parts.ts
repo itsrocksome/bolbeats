@@ -1,6 +1,6 @@
-// BolBeats: best parts made before 1.1 came one per song. Once, a little after launch, every song that has parts is
-// checked for its other best parts (and a part under 15 s for its longer find); best-parts playlists BolBeats made take
-// them in. Your own parts and playlists you've changed are left as they are.
+// BolBeats: once per finder version (the SCANNED key in auto-hooks), a little after launch, every song that has parts is
+// checked for its other best parts (and a part under 25 s for its longer find); best-parts playlists BolBeats made take
+// them in. Parts you made or edited and playlists you've changed are left as they are.
 import type { Song } from '/@/shared/types/domain-types';
 
 import { addMoreParts, isScanned } from '/@/renderer/features/best-parts/auto-hooks';
@@ -20,6 +20,7 @@ export const findMoreParts = async () => {
         return;
     running = true;
     let added = 0;
+    let lengthened = 0;
     let songs = 0;
     try {
         const bySong = new Map(
@@ -40,6 +41,7 @@ export const findMoreParts = async () => {
                 const { fresh, longer } = await addMoreParts(song);
                 if (fresh.length || longer.size) songs++;
                 added += fresh.length;
+                lengthened += longer.size;
             } catch {
                 // the song is gone or can't be read: try again next launch
             }
@@ -49,7 +51,7 @@ export const findMoreParts = async () => {
     }
     if (songs)
         toast.success({
-            message: `${added ? `${added} more best ${added === 1 ? 'part' : 'parts'} in ${songs} ${songs === 1 ? 'song' : 'songs'}` : `Longer parts in ${songs} ${songs === 1 ? 'song' : 'songs'}`}. The best-parts playlists BolBeats made have them now.`,
+            message: `${[added && `${added} more best ${added === 1 ? 'part' : 'parts'}`, lengthened && `${lengthened} ${lengthened === 1 ? 'part' : 'parts'} made longer`].filter(Boolean).join(' and ')} in ${songs} ${songs === 1 ? 'song' : 'songs'}. The best-parts playlists BolBeats made have them now.`,
             title: 'BolBeats found more best parts',
         });
 };
