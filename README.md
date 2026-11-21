@@ -124,7 +124,7 @@ pnpm run build
 pnpm exec electron-builder --mac dmg --arm64 --publish never
 ```
 
-Checks: `pnpm run lint` (types, code and styles) and `node --test test/`.
+Checks: `pnpm run lint` (types, code and styles) and `node --test test/*.test.ts`.
 
 ## Credits
 - [Feishin](https://github.com/jeffvli/feishin) by jeffvli and contributors, the player BolBeats is built on (GPL-3.0).

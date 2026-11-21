@@ -16,7 +16,7 @@ pnpm run dev
 ## Before you open a pull request
 
 - `pnpm run lint` passes (types, code and styles).
-- `node --test test/` passes.
+- `node --test test/*.test.ts` passes.
 - Keep changes small and focused, and keep BolBeats private: no analytics, no tracking, nothing that sends a listener's
   music or data anywhere.
 - Commit messages follow [Conventional Commits](https://www.conventionalcommits.org), for example `feat: add a fade
