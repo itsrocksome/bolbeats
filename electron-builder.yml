@@ -35,15 +35,11 @@ nsis:
     createDesktopShortcut: always
 
 mac:
+    # BolBeats: Apple Silicon only (that is the Mac it is built and tested on)
     target:
         - target: dmg
           arch:
               - arm64
-              - x64
-        - target: zip
-          arch:
-              - arm64
-              - x64
     # BolBeats: the .icon format needs full Xcode (actool), so use the PNG
     icon: assets/icons/1024x1024.png
     type: distribution

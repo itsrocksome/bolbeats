@@ -1,17 +1,17 @@
 // BolBeats: fetches the Navidrome server that BolBeats bundles (it is not kept in git).
-// Downloads the official macOS builds of one pinned version, checks them against the release's checksums, and joins the
-// Apple Silicon and Intel binaries into one universal file at resources/navidrome/navidrome.
+// Downloads the official Apple Silicon build of one pinned version, checks it against the release's checksums, and puts
+// it at resources/navidrome/navidrome.
 // Usage: node scripts/get-navidrome.mjs
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, copyFileSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const VERSION = '0.64.2';
 const BASE = `https://github.com/navidrome/navidrome/releases/download/v${VERSION}`;
-const ARCHES = ['arm64', 'amd64'];
+const ARCHES = ['arm64'];
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const out = path.join(root, 'resources', 'navidrome');
@@ -54,9 +54,11 @@ try {
     }
     mkdirSync(out, { recursive: true });
     const target = path.join(out, 'navidrome');
-    execFileSync('lipo', ['-create', ...parts, '-output', target]);
+    // more than one architecture listed: join them into one universal binary
+    if (parts.length > 1) execFileSync('lipo', ['-create', ...parts, '-output', target]);
+    else copyFileSync(parts[0], target);
     chmodSync(target, 0o755);
-    console.log(`universal Navidrome ${VERSION} written to ${path.relative(root, target)}`);
+    console.log(`Navidrome ${VERSION} written to ${path.relative(root, target)}`);
 } finally {
     rmSync(tmp, { force: true, recursive: true });
 }

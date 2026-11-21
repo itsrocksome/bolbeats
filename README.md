@@ -6,7 +6,7 @@ It finds the hook of each song in your library and mixes them back to back, like
 <p align="center">
   <a href="https://github.com/itsrocksome/bolbeats/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/itsrocksome/bolbeats?label=download&color=ff5fa2"></a>
   <a href="https://github.com/itsrocksome/bolbeats/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/itsrocksome/bolbeats/total?color=ff5fa2"></a>
-  <img alt="macOS: Apple Silicon and Intel" src="https://img.shields.io/badge/macOS-Apple%20Silicon%20%7C%20Intel-111?logo=apple">
+  <img alt="macOS on Apple Silicon" src="https://img.shields.io/badge/macOS-Apple%20Silicon-111?logo=apple">
   <a href="LICENSE"><img alt="License: GPL-3.0" src="https://img.shields.io/badge/license-GPL--3.0-blue"></a>
   <a href="https://hits.sh/github.com/itsrocksome/bolbeats/"><img alt="Visitors" src="https://hits.sh/github.com/itsrocksome/bolbeats.svg?label=visitors&color=7a3cff"></a>
 </p>
@@ -19,12 +19,10 @@ stays on your Mac.
 
 ## Download
 
-| Your Mac | Download |
-| --- | --- |
-| Apple Silicon (M1, M2, M3, M4 and later) | [BolBeats-mac-arm64.dmg](https://github.com/itsrocksome/bolbeats/releases/latest/download/BolBeats-mac-arm64.dmg) |
-| Intel | [BolBeats-mac-x64.dmg](https://github.com/itsrocksome/bolbeats/releases/latest/download/BolBeats-mac-x64.dmg) |
+**[Download BolBeats for Mac (Apple Silicon)](https://github.com/itsrocksome/bolbeats/releases/latest/download/BolBeats-mac-arm64.dmg)**
 
-Not sure which Mac you have? Apple menu > About This Mac: "Chip" means Apple Silicon, "Processor" means Intel.
+BolBeats needs a Mac with Apple Silicon (M1 or later). Not sure? Apple menu > About This Mac: it says "Chip" on Apple
+Silicon Macs.
 
 **First launch.** Open the DMG and drag BolBeats into Applications. BolBeats is free and is not yet signed with a paid
 Apple developer certificate, so the first time you open it macOS may say it can't check the app. Go to
