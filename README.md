@@ -21,8 +21,8 @@ stays on your Mac.
 
 | Your Mac | Download |
 | --- | --- |
-| Apple Silicon (M1, M2, M3, M4 and later) | [BolBeats-1.0.0-mac-arm64.dmg](https://github.com/itsrocksome/bolbeats/releases/download/v1.0.0/BolBeats-1.0.0-mac-arm64.dmg) |
-| Intel | [BolBeats-1.0.0-mac-x64.dmg](https://github.com/itsrocksome/bolbeats/releases/download/v1.0.0/BolBeats-1.0.0-mac-x64.dmg) |
+| Apple Silicon (M1, M2, M3, M4 and later) | [BolBeats-mac-arm64.dmg](https://github.com/itsrocksome/bolbeats/releases/latest/download/BolBeats-mac-arm64.dmg) |
+| Intel | [BolBeats-mac-x64.dmg](https://github.com/itsrocksome/bolbeats/releases/latest/download/BolBeats-mac-x64.dmg) |
 
 Not sure which Mac you have? Apple menu > About This Mac: "Chip" means Apple Silicon, "Processor" means Intel.
 
@@ -36,18 +36,20 @@ fine) or pick any folder in **Your library**.
 ## What it does
 
 ### Best parts, found for you
-- **The hook of every song, found automatically.** BolBeats listens to each song and finds its chorus: the section that
-  repeats, is loudest and busiest, cut on the beat at a quiet moment. Parts are as long as the chorus really is, rounded to
-  whole musical phrases, so they never stop mid-line.
+- **Every best part of every song, found automatically.** BolBeats listens to each song and finds its hook (usually the
+  chorus: the section that repeats, is loudest and busiest), then every other section that sounds different and stands
+  out nearly as much, like a drop or a second hook. Some songs get one part, some get several; the song decides. Parts
+  are cut on the beat at a quiet moment and are as long as the section really is, rounded to whole musical phrases.
 - **Or mark your own.** Press <kbd>B</kbd> while a song plays to mark where your part starts and again where it ends, or drag
   across the song's waveform. A song can have as many parts as you like.
-- **Make the best-parts version of any playlist** in about half a second per song.
+- **Make the best-parts version of any playlist** in about half a second per song, or pick the parts yourself song by
+  song and let BolBeats arrange them.
 
 ### Mixed like a DJ
 - **Best-parts playlists** play only the parts, joined with transitions chosen from each part's tempo and key: beat blend,
   filter sweep, bass swap, echo out, cut on the beat and more. Every join shows how well the two parts fit.
 - **Smoothest flow** puts parts in the order that joins best. **Mashup** lets songs take turns (A1, B2, A2, B1...) wherever
-  they fit, and never plays a song backwards.
+  they fit, and never plays a song backwards. When songs have several parts, BolBeats arranges them this way by itself.
 - Hear any join on its own, try another transition, drag parts into any order, add songs, and save the mix as a WAV file.
 - **Made for you:** Daily hooks, Turn it up, Wind down and In tune are rebuilt from your parts every day, plus a hook of the day.
 

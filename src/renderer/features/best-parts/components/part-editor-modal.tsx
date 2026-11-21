@@ -18,7 +18,7 @@ import { useShallow } from 'zustand/react/shallow';
 import styles from './part-editor-modal.module.css';
 
 import { snapQuiet, toMono } from '/@/renderer/features/best-parts/engine/engine';
-import { suggestHookAsync } from '/@/renderer/features/best-parts/engine/hook-async';
+import { suggestHooksAsync } from '/@/renderer/features/best-parts/engine/hook-async';
 import {
     analyzeBuffer,
     decodeSong,
@@ -92,6 +92,7 @@ export const PartEditor = ({
     const [buf, setBuf] = useState<AudioBuffer | null>(null);
     const [error, setError] = useState<null | string>(null);
     const [sel, setSel] = useState<[number, number]>([0, 0]);
+    const [found, setFound] = useState<[number, number][]>([]); // BolBeats' suggested parts, in song order
     const [editingId, setEditingId] = useState<null | string>(null);
     const [snap, setSnap] = useState(true);
     const [playing, setPlaying] = useState(false);
@@ -125,11 +126,14 @@ export const PartEditor = ({
         [dur],
     );
 
-    // The hook finder: the chorus, the section that comes back most and is loud (works in the background).
+    // The part finder (in the background): the hook first, plus any other section that sounds different and stands out.
     const suggest = useCallback(() => {
         if (!buf) return;
         setEditingId(null);
-        suggestHookAsync(buf).then(setSel);
+        suggestHooksAsync(buf).then((all) => {
+            setSel(all[0]);
+            setFound([...all].sort(([a], [b]) => a - b));
+        });
     }, [buf]);
 
     useEffect(() => {
@@ -298,30 +302,35 @@ export const PartEditor = ({
         setRange(next[0], next[1]);
     };
 
+    const store = (range: [number, number], editing: null | string) => {
+        let [a, z] = range;
+        if (snap) [a, z] = [snapQuiet(mono!.x, mono!.sr, a), snapQuiet(mono!.x, mono!.sr, z)];
+        const partId = editing ?? nanoid();
+        const part: BestPart = {
+            album: song.album,
+            analysis: analyzeBuffer(slice(buf!, a, z)),
+            artist: song.artistName,
+            created: useBestPartsStore.getState().parts[partId]?.created ?? Date.now(),
+            end: z,
+            id: partId,
+            imageUrl: song.imageUrl,
+            songDuration: buf!.duration,
+            songId: song.id,
+            start: a,
+            title: song.name,
+        };
+        forgetPart(partId);
+        useBestPartsStore.getState().savePart(part);
+        if (!editing) onNewPart?.(part);
+        return part;
+    };
+
     const save = async () => {
         if (!buf || !mono) return;
         setSaving(true);
         stopPreview();
         try {
-            let [a, z] = sel;
-            if (snap) [a, z] = [snapQuiet(mono.x, mono.sr, a), snapQuiet(mono.x, mono.sr, z)];
-            const partId = editingId ?? nanoid();
-            const part: BestPart = {
-                album: song.album,
-                analysis: analyzeBuffer(slice(buf, a, z)),
-                artist: song.artistName,
-                created: useBestPartsStore.getState().parts[partId]?.created ?? Date.now(),
-                end: z,
-                id: partId,
-                imageUrl: song.imageUrl,
-                songDuration: buf.duration,
-                songId: song.id,
-                start: a,
-                title: song.name,
-            };
-            forgetPart(partId);
-            useBestPartsStore.getState().savePart(part);
-            if (!editingId) onNewPart?.(part);
+            const part = store(sel, editingId);
             selectPart(part);
             toast.success({ message: editingId ? 'Best part updated' : 'Best part saved' });
         } catch (e) {
@@ -329,6 +338,19 @@ export const PartEditor = ({
         } finally {
             setSaving(false);
         }
+    };
+
+    const unsaved = found.filter(
+        ([a, z]) => !parts.some((p) => Math.min(p.end, z) - Math.max(p.start, a) > (z - a) / 2),
+    );
+    const saveAll = () => {
+        if (!buf || !mono) return;
+        stopPreview();
+        const made = unsaved.map((r) => store(r, null));
+        if (made.length) selectPart(made[0]);
+        toast.success({
+            message: `${made.length} best ${made.length === 1 ? 'part' : 'parts'} saved`,
+        });
     };
 
     const remove = () => {
@@ -455,9 +477,43 @@ export const PartEditor = ({
                     onClick={suggest}
                     type="button"
                 >
-                    <Icon icon="bestParts" size="sm" /> Suggest the hook
+                    <Icon icon="bestParts" size="sm" /> Suggest best parts
                 </button>
             </div>
+            {unsaved.length > 0 && (
+                <div className={styles.parts}>
+                    <Text isMuted size="sm">
+                        {unsaved.length === 1
+                            ? 'BolBeats suggests:'
+                            : `BolBeats found ${unsaved.length} parts:`}
+                    </Text>
+                    {unsaved.map(([a, z]) => (
+                        <button
+                            className={clsx(
+                                styles.chip,
+                                !editingId && sel[0] === a && sel[1] === z && styles.active,
+                            )}
+                            key={a}
+                            onClick={() => (setEditingId(null), setSel([a, z]))}
+                            type="button"
+                        >
+                            Suggested{' '}
+                            <span>
+                                {formatClock(a)}–{formatClock(z)}
+                            </span>
+                        </button>
+                    ))}
+                    {unsaved.length > 1 && (
+                        <button
+                            className={clsx(styles.chip, styles.suggest)}
+                            onClick={saveAll}
+                            type="button"
+                        >
+                            Add all {unsaved.length}
+                        </button>
+                    )}
+                </div>
+            )}
 
             <div className={styles.footer}>
                 {footerStart}

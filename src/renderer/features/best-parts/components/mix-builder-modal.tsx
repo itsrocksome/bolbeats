@@ -9,7 +9,7 @@ import { useShallow } from 'zustand/react/shallow';
 import styles from './part-editor-modal.module.css';
 
 import { PartEditor } from '/@/renderer/features/best-parts/components/part-editor-modal';
-import { smartOrder } from '/@/renderer/features/best-parts/mix-player';
+import { autoOrder } from '/@/renderer/features/best-parts/mix-player';
 import {
     mixForPlaylist,
     useBestPartsStore,
@@ -67,7 +67,7 @@ export const MixBuilderModal = ({
     );
     const marked = new Set(parts.map((p) => p.songId)).size;
     const create = () => {
-        const ids = order === 'smart' ? smartOrder(parts) : inSourceOrder.map((p) => p.id);
+        const ids = order === 'smart' ? autoOrder(parts) : inSourceOrder.map((p) => p.id);
         const store = useBestPartsStore.getState();
         const existing = sourcePlaylistId && mixForPlaylist(store.mixes, sourcePlaylistId);
         let mixId = existing ? existing.id : '';
@@ -101,7 +101,7 @@ export const MixBuilderModal = ({
                 </Text>
                 <SegmentedControl
                     data={[
-                        { label: 'Auto-arrange for smooth flow', value: 'smart' },
+                        { label: 'Let BolBeats arrange them', value: 'smart' },
                         { label: 'Keep my order', value: 'source' },
                     ]}
                     onChange={(v) => setOrder(v as 'smart' | 'source')}

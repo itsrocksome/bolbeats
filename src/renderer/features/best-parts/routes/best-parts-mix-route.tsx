@@ -20,6 +20,7 @@ import {
 } from '/@/renderer/features/best-parts/components/shared';
 import { TRANSITIONS, type TransitionType } from '/@/renderer/features/best-parts/engine/engine';
 import {
+    autoOrder,
     flowOf,
     mashupOrder,
     playMixById,
@@ -76,7 +77,7 @@ const MixRoute = () => {
         const cur = useBestPartsStore.getState().mixes[ALL_PARTS_MIX];
         const kept = cur?.partIds.filter((id) => ids.has(id)) ?? [];
         if (cur && kept.length === ids.size && kept.length === cur.partIds.length) return;
-        const partIds = kept.length === ids.size ? kept : smartOrder(all);
+        const partIds = kept.length === ids.size ? kept : autoOrder(all);
         if (!cur)
             useBestPartsStore.setState((s) => ({
                 mixes: {

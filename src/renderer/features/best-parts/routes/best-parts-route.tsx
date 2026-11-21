@@ -21,9 +21,9 @@ import {
     SongMenuButton,
 } from '/@/renderer/features/best-parts/components/shared';
 import {
+    autoOrder,
     playMixById,
     playParts,
-    smartOrder,
     useMixPlayer,
 } from '/@/renderer/features/best-parts/mix-player';
 import {
@@ -102,7 +102,7 @@ const BestPartsRoute = () => {
         });
 
     const playAll = () => {
-        const order = smartOrder(parts);
+        const order = autoOrder(parts);
         const picks = mixMap[ALL_PARTS_MIX]?.picks ?? {};
         playParts(
             order.map((id) => partMap[id]),
@@ -115,7 +115,7 @@ const BestPartsRoute = () => {
         const chosen = parts.filter((p) => picked.has(p.id));
         const id = useBestPartsStore
             .getState()
-            .createMix(`My best parts ${mixes.length + 1}`, smartOrder(chosen));
+            .createMix(`My best parts ${mixes.length + 1}`, autoOrder(chosen));
         setPicked(new Set());
         navigate(mixRoute(id));
     };

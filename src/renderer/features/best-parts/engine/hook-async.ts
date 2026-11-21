@@ -2,7 +2,7 @@
 // at a time); if workers aren't available it works in place (slower to paint, same answer).
 import HookWorker from './hook-worker?worker&inline';
 
-import { suggestHook, toMono } from '/@/renderer/features/best-parts/engine/engine';
+import { suggestHooks, toMono } from '/@/renderer/features/best-parts/engine/engine';
 
 const POOL = 2;
 const idle: Worker[] = [];
@@ -23,8 +23,8 @@ const give = (w: Worker) => {
 
 const inWorker = async (x: Float32Array, sampleRate: number, len?: number) => {
     const w = await take();
-    return new Promise<[number, number]>((resolve, reject) => {
-        w.onmessage = (e: MessageEvent<[number, number]>) => {
+    return new Promise<[number, number][]>((resolve, reject) => {
+        w.onmessage = (e: MessageEvent<[number, number][]>) => {
             give(w);
             resolve(e.data);
         };
@@ -37,11 +37,16 @@ const inWorker = async (x: Float32Array, sampleRate: number, len?: number) => {
     });
 };
 
-export const suggestHookAsync = (buf: AudioBuffer, len?: number): Promise<[number, number]> => {
+// Every best part of a song, strongest first (see findHooks in engine.ts).
+export const suggestHooksAsync = (buf: AudioBuffer, len?: number): Promise<[number, number][]> => {
     // the finder works on mono at ~22 kHz anyway; sending that is a quarter of the stereo song (same answer)
     const { sr, x } = toMono(
         Array.from({ length: buf.numberOfChannels }, (_, i) => buf.getChannelData(i)),
         buf.sampleRate,
     );
-    return inWorker(x.slice(), sr, len).catch(() => suggestHook([x], sr, len));
+    return inWorker(x.slice(), sr, len).catch(() => suggestHooks([x], sr, len));
 };
+
+// The hook alone.
+export const suggestHookAsync = (buf: AudioBuffer, len?: number): Promise<[number, number]> =>
+    suggestHooksAsync(buf, len).then((parts) => parts[0]);

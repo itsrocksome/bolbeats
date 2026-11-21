@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.1.0
+
+- Every best part, not just one: BolBeats now finds each section of a song that stands out (the hook, plus a drop,
+  a post-chorus or a second hook that sounds different). There is no fixed number; each song decides. A part that
+  changes to a clearly different sound halfway is split into two.
+- Best-parts playlists use all of them: when a song has several parts, songs take turns wherever their joins fit, and a
+  song's parts always play in time order. This applies to Let BolBeats pick, your hand-picked parts, ticked parts and
+  Play all.
+- The part editor shows every suggested part as a chip, with Add all.
+- Pick the parts yourself, then choose Let BolBeats arrange them or Keep my order; edit the result any way you like.
+
 ## 1.0.0
 
 The first release of BolBeats.

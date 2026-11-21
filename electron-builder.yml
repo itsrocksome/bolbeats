@@ -1,6 +1,7 @@
 appId: local.bolbeats.player
 productName: BolBeats
-artifactName: ${productName}-${version}-${os}-${arch}.${ext}
+# BolBeats: no version in the file name, so download links to the latest release never change
+artifactName: ${productName}-${os}-${arch}.${ext}
 electronVersion: 43.8.7
 directories:
     buildResources: assets

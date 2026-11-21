@@ -422,6 +422,208 @@ const nearestPeak = (nov: number[], target: number, lo: number, hi: number) => {
     return best < 0 ? target : best;
 };
 
+// BolBeats: the best parts of a song, strongest first. The first is the hook (usually the chorus); after it, every
+// section that sounds different (not another repeat of a part already picked, never overlapping one) and stands out
+// from the song at least `stand` as much as the hook does (0.5 = halfway from the song's typical moment to its hook),
+// like a drop, a post-chorus or a second hook. How many is up to the song: on 36 real songs, 8 had two. `max` only
+// exists so callers can ask for the hook alone.
+export function findHooks(
+    channels: Float32Array[],
+    sampleRate: number,
+    len = 24,
+    max = Infinity,
+    stand = 0.5,
+): { median: number; parts: [number, number][]; scores: number[] } {
+    const m = toMono(channels, sampleRate);
+    const half = new Float32Array(m.x.length >> 1);
+    for (let i = 0; i < half.length; i++) half[i] = (m.x[2 * i] + m.x[2 * i + 1]) / 2;
+    const sr = m.sr / 2;
+    const duration = half.length / sr;
+    const f = frames(half, sr);
+    const fps = sr / HOP;
+    const per = Math.max(1, Math.round(fps * BLOCK));
+    const bs = per / fps; // a block's real length (0.51 s at 11 kHz), so times don't drift late in the song
+    const n = Math.floor(f.rms.length / per);
+    const L = Math.round(len / bs);
+    if (n < L * 2) {
+        const a = Math.max(0, Math.min(duration * 0.3, duration - len));
+        return { median: 0, parts: [[a, Math.min(duration, a + len)]], scores: [0] };
+    }
+    const block = <T>(a: T[], b: number) => a.slice(b * per, (b + 1) * per);
+    const chroma = Array.from({ length: n }, (_, b) => {
+        const c = meanVec(block(f.chroma, b), 12);
+        const top = Math.max(...c) || 1;
+        return unit(c.map((v) => Math.log1p((10 * v) / top)));
+    });
+    // timbre without the loudness coefficient, each coefficient standardised over the song
+    const raw = Array.from({ length: n }, (_, b) => meanVec(block(f.mfcc, b), 13).slice(1));
+    const mu = meanVec(raw, 12);
+    const sd = mu.map((_, k) => Math.sqrt(mean(raw.map((r) => (r[k] - mu[k]) ** 2))) || 1);
+    const timbre = raw.map((r) => unit(r.map((v, k) => (v - mu[k]) / sd[k])));
+    const db = Array.from({ length: n }, (_, b) => 20 * Math.log10(mean(block(f.rms, b)) + 1e-6));
+    const flux = Array.from({ length: n }, (_, b) => mean(block(f.flux, b)));
+
+    const nov = novelty(
+        chroma.map((c, i) => [...c.map((v) => v * 0.8), ...timbre[i].map((v) => v * 0.6)]),
+    );
+    const S = recurrence(chroma, timbre);
+    const scores = chorusScores(chroma, timbre, db, flux, L, nov, S);
+    // near-ties are usually the same chorus at different times: take the earliest (Bartsch & Wakefield's rule), so the
+    // pick doesn't flip between repeats on tiny decoding differences; a clearly bigger last chorus still wins
+    const best = Math.max(...scores);
+    const t0 = Math.max(
+        0,
+        scores.findIndex((v) => v >= best - 0.04),
+    );
+
+    // a short kernel places the cut within a beat or two of the real section change
+    const sharp = novelty(
+        chroma.map((c, i) => [...c.map((v) => v * 0.8), ...timbre[i].map((v) => v * 0.6)]),
+        4,
+    );
+    const { beats, bpm } = tempo(f.flux, fps);
+    const onBeat = (s: number) => {
+        const b = beats.reduce((best, x) => (Math.abs(x - s) < Math.abs(best - s) ? x : best), s);
+        return Math.abs(b - s) <= 0.5 ? b : s;
+    };
+    const min = Math.round(12 / bs);
+    const strong = 0.5 * Math.max(...nov);
+    // choruses come in 4-bar phrases (8 or 16 bars mostly)
+    const phrase = (16 * 60) / bpm;
+
+    // One part from a starting block: start on the section change, last as long as the section keeps repeating
+    // (12-45 s) ending at the first strong section change inside it, rounded to whole phrases, never past `stopAt` s.
+    const refine = (t: number, stopAt: number) => {
+        const a = nearestPeak(sharp, t, t - 6, t + 6);
+        const run = repeatLength(S, a, min, Math.round(45 / bs));
+        let cut = -1;
+        for (let i = a + min; run && i <= Math.min(n - 2, a + run + 4) && cut < 0; i++)
+            if (nov[i] >= strong && nov[i] >= nov[i - 1] && nov[i] >= nov[i + 1]) cut = i;
+        const goal = cut >= 0 ? cut : a + run;
+        const z = run
+            ? nearestPeak(sharp, goal, goal - 4, goal + 4)
+            : nearestPeak(sharp, a + L, a + Math.round(L * 0.7), a + Math.round(L * 1.4));
+        const start = Math.max(0, snapQuiet(half, sr, onBeat(a * bs), 0.12));
+        let phrases = Math.max(2, Math.round(((z - a) * bs) / phrase));
+        // a phrase that runs a little into the next picked section is kept and ends where that section starts
+        while (
+            phrases > 1 &&
+            (phrases * phrase > 45 || start + phrases * phrase > stopAt + phrase / 4)
+        )
+            phrases--;
+        const end = Math.min(
+            duration,
+            stopAt,
+            snapQuiet(half, sr, onBeat(start + phrases * phrase), 0.12),
+        );
+        return { a, end: Math.max(end, Math.min(stopAt, start + 8)), start };
+    };
+
+    const hit = (i: number, j: number) => (S[i]?.[j - 1] || S[i]?.[j] || S[i]?.[j + 1] ? 1 : 0);
+    // how strongly [t, t + min) happens again somewhere inside [a, z) (a repeat of a part already picked)
+    const repeatOf = (t: number, a: number, z: number) => {
+        let strongest = 0;
+        for (let o = a - 2; o <= Math.max(a, z - min) + 2; o++) {
+            if (Math.abs(o - t) < min) continue;
+            let m = 0;
+            for (let k = 0; k < min; k++) m += hit(t + k, o + k);
+            strongest = Math.max(strongest, m / min);
+        }
+        return strongest;
+    };
+
+    // where a picked part and each repeat of it sit (block ranges): later parts start outside these and end before them
+    const taken: [number, number][] = [];
+    const take = (a: number, zb: number) => {
+        taken.push([a, zb]);
+        const m = Array.from({ length: Math.max(0, n - min + 1) }, (_, u) => {
+            if (Math.abs(u - a) < min) return 0;
+            let s = 0;
+            for (let k = 0; k < min; k++) s += hit(a + k, u + k);
+            return s / min;
+        });
+        // a repeat sits where the match peaks (a looping beat also half-matches a few seconds either side)
+        const h = min >> 1;
+        m.forEach((v, u) => {
+            if (v >= 0.45 && v >= Math.max(...m.slice(Math.max(0, u - h), u + h + 1)))
+                taken.push([u, u + (zb - a)]);
+        });
+    };
+
+    const first = refine(t0, duration);
+    const picked = [{ ...first, score: scores[t0], zb: Math.round(first.end / bs) }];
+    take(first.a, picked[0].zb);
+    const typical = median(scores);
+    const order = scores.map((v, t) => [v, t] as const).sort((x, y) => y[0] - x[0]);
+    for (const [v, t] of order) {
+        if (
+            picked.length >= max ||
+            best - typical < 1e-6 ||
+            (v - typical) / (best - typical) < stand
+        )
+            break;
+        if (taken.some(([a, z]) => t + min > a - 2 && t < z + 2)) continue; // inside or touching a picked part or a repeat of one
+        // the same section again: on real songs other choruses match the hook at 0.48 and up, different sections at 0.43 or less
+        if (picked.some((p) => repeatOf(t, p.a, p.zb) >= 0.45)) continue;
+        const next = taken.filter(([a]) => a > t).map(([a]) => a * bs);
+        const part = refine(t, Math.min(duration, ...next));
+        if (part.end - part.start < 8) continue;
+        picked.push({ ...part, score: v, zb: Math.round(part.end / bs) });
+        take(part.a, picked[picked.length - 1].zb);
+    }
+    // a part that changes to a clearly different sound halfway (a chorus running into the drop) becomes two parts at
+    // that change, each at least a phrase long; played next to each other in a mix they still join seamlessly
+    const feat = (a: number, z: number) =>
+        unit(
+            meanVec(
+                chroma
+                    .slice(a, z)
+                    .map((c, i) => [
+                        ...c.map((v) => v * 0.8),
+                        ...timbre[a + i].map((v) => v * 0.6),
+                    ]),
+                24,
+            ),
+        );
+    const novTop = Math.max(...nov) || 1;
+    const out: { end: number; score: number; start: number }[] = [];
+    for (const p of picked) {
+        const pa = Math.round(p.start / bs);
+        const pz = Math.round(p.end / bs);
+        const minB = Math.round(phrase / bs);
+        let cut = -1;
+        for (let i = pa + minB; i <= pz - minB; i++)
+            if (
+                nov[i] >= nov[i - 1] &&
+                nov[i] >= nov[i + 1] &&
+                nov[i] >= 0.35 * novTop &&
+                (cut < 0 || nov[i] > nov[cut])
+            )
+                cut = i;
+        if (cut > 0 && dot(feat(pa, cut), feat(cut, pz)) < 0.8) {
+            // split on the phrase line nearest the change
+            const k = Math.max(1, Math.round((cut * bs - p.start) / phrase));
+            const at = p.start + k * phrase;
+            if (
+                at - p.start >= Math.max(8, phrase * 0.75) &&
+                p.end - at >= Math.max(8, phrase * 0.75)
+            ) {
+                out.push(
+                    { end: at, score: p.score, start: p.start },
+                    { end: p.end, score: p.score, start: at },
+                );
+                continue;
+            }
+        }
+        out.push(p);
+    }
+    return {
+        median: typical,
+        parts: out.map((p) => [p.start, p.end] as [number, number]),
+        scores: out.map((p) => p.score),
+    };
+}
+
 // How long the section starting at block `a` keeps repeating: follow it alongside each place it clearly repeats
 // (a block either side allows for tempo drift) until the match fades, never past where that repeat starts, and keep
 // the longest (a chorus that repeats a line inside itself still counts as one chorus). 0 when nothing repeats clearly.
@@ -453,84 +655,22 @@ export function repeatLength(S: Float32Array[], a: number, min: number, max: num
     return longest;
 }
 
+// The hook alone (the first of findHooks).
 export function suggestHook(
     channels: Float32Array[],
     sampleRate: number,
     len = 24,
 ): [number, number] {
-    const m = toMono(channels, sampleRate);
-    const half = new Float32Array(m.x.length >> 1);
-    for (let i = 0; i < half.length; i++) half[i] = (m.x[2 * i] + m.x[2 * i + 1]) / 2;
-    const sr = m.sr / 2;
-    const duration = half.length / sr;
-    const f = frames(half, sr);
-    const fps = sr / HOP;
-    const per = Math.max(1, Math.round(fps * BLOCK));
-    const bs = per / fps; // a block's real length (0.51 s at 11 kHz), so times don't drift late in the song
-    const n = Math.floor(f.rms.length / per);
-    const L = Math.round(len / bs);
-    if (n < L * 2) {
-        const a = Math.max(0, Math.min(duration * 0.3, duration - len));
-        return [a, Math.min(duration, a + len)];
-    }
-    const block = <T>(a: T[], b: number) => a.slice(b * per, (b + 1) * per);
-    const chroma = Array.from({ length: n }, (_, b) => {
-        const c = meanVec(block(f.chroma, b), 12);
-        const top = Math.max(...c) || 1;
-        return unit(c.map((v) => Math.log1p((10 * v) / top)));
-    });
-    // timbre without the loudness coefficient, each coefficient standardised over the song
-    const raw = Array.from({ length: n }, (_, b) => meanVec(block(f.mfcc, b), 13).slice(1));
-    const mu = meanVec(raw, 12);
-    const sd = mu.map((_, k) => Math.sqrt(mean(raw.map((r) => (r[k] - mu[k]) ** 2))) || 1);
-    const timbre = raw.map((r) => unit(r.map((v, k) => (v - mu[k]) / sd[k])));
-    const db = Array.from({ length: n }, (_, b) => 20 * Math.log10(mean(block(f.rms, b)) + 1e-6));
-    const flux = Array.from({ length: n }, (_, b) => mean(block(f.flux, b)));
+    return findHooks(channels, sampleRate, len, 1).parts[0];
+}
 
-    const nov = novelty(
-        chroma.map((c, i) => [...c.map((v) => v * 0.8), ...timbre[i].map((v) => v * 0.6)]),
-    );
-    const S = recurrence(chroma, timbre);
-    const scores = chorusScores(chroma, timbre, db, flux, L, nov, S);
-    // near-ties are usually the same chorus at different times: take the earliest (Bartsch & Wakefield's rule), so the
-    // pick doesn't flip between repeats on tiny decoding differences; a clearly bigger last chorus still wins
-    const best = Math.max(...scores);
-    const t = Math.max(
-        0,
-        scores.findIndex((v) => v >= best - 0.04),
-    );
-
-    // a short kernel places the cut within a beat or two of the real section change
-    const sharp = novelty(
-        chroma.map((c, i) => [...c.map((v) => v * 0.8), ...timbre[i].map((v) => v * 0.6)]),
-        4,
-    );
-    const a = nearestPeak(sharp, t, t - 6, t + 6);
-    // BolBeats: the part lasts as long as the chorus keeps repeating (12-45 s), ending on the section change there;
-    // without a clear repeat it falls back to about `len` seconds
-    const min = Math.round(12 / bs);
-    const run = repeatLength(S, a, min, Math.round(45 / bs));
-    // the first strong section change inside the repeat ends it (a chorus never runs on into the next verse)
-    const strong = 0.5 * Math.max(...nov);
-    let cut = -1;
-    for (let i = a + min; run && i <= Math.min(n - 2, a + run + 4) && cut < 0; i++)
-        if (nov[i] >= strong && nov[i] >= nov[i - 1] && nov[i] >= nov[i + 1]) cut = i;
-    const goal = cut >= 0 ? cut : a + run;
-    const z = run
-        ? nearestPeak(sharp, goal, goal - 4, goal + 4)
-        : nearestPeak(sharp, a + L, a + Math.round(L * 0.7), a + Math.round(L * 1.4));
-    const { beats, bpm } = tempo(f.flux, fps);
-    const onBeat = (s: number) => {
-        const b = beats.reduce((best, x) => (Math.abs(x - s) < Math.abs(best - s) ? x : best), s);
-        return Math.abs(b - s) <= 0.5 ? b : s;
-    };
-    const start = snapQuiet(half, sr, onBeat(a * bs), 0.12);
-    // choruses come in 4-bar phrases (8 or 16 bars mostly): round the length to whole phrases, at least 8 bars, at most 45 s
-    const phrase = (16 * 60) / bpm;
-    let phrases = Math.max(2, Math.round(((z - a) * bs) / phrase));
-    while (phrases > 1 && phrases * phrase > 45) phrases--;
-    const end = snapQuiet(half, sr, onBeat(start + phrases * phrase), 0.12);
-    return [Math.max(0, start), Math.min(duration, Math.max(end, start + 8))];
+// All the best parts the song has, strongest first.
+export function suggestHooks(
+    channels: Float32Array[],
+    sampleRate: number,
+    len = 24,
+): [number, number][] {
+    return findHooks(channels, sampleRate, len).parts;
 }
 
 // ---------------- mixing ----------------

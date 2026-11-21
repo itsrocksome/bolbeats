@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { suggestHook } from '../src/renderer/features/best-parts/engine/engine.ts';
+import { findHooks, suggestHook } from '../src/renderer/features/best-parts/engine/engine.ts';
 
 const SR = 22050;
 const hz = (m: number) => 440 * 2 ** ((m - 69) / 12);
@@ -186,4 +186,42 @@ test('a chorus always followed by the same verse still ends with the chorus', ()
         );
         assert.ok(b - a <= len + 10, msg); // never a whole verse (16 s) extra
     }
+});
+
+test('a song with two different hooks gets both as best parts; a song with one gets one', () => {
+    // the drop: its own chords and melody, loud and busy, and it comes back too
+    const drop: Sec = {
+        chords: [Em, Dm, Em, Dm],
+        gain: 1,
+        hats: true,
+        melody: [64, 67, 71, 67, 76, 74, 71, 67],
+        sec: 16,
+    };
+    // two hooks: both loop a short phrase at full energy, like a vocal chorus and an instrumental drop
+    const hook: Sec = { ...chorus, chords: [F, G, F, G], gain: 1 };
+    const two = [intro, verse, hook, drop, verse, hook, drop, outro];
+    const { at, x } = build(two);
+    const startsOf = (sec: Sec) =>
+        two.map((s, i) => (s === sec ? at[i] : -1)).filter((t) => t >= 0);
+    const result = findHooks([x], SR, 16);
+    const found = result.parts;
+    const lands = (starts: number[]) =>
+        found.some(([a]) => starts.some((s) => a >= s - 1.5 && a < s + 8));
+    assert.ok(
+        found.length >= 2,
+        `found ${found.map(([a, b]) => `${a.toFixed(1)}-${b.toFixed(1)}`).join(', ')} (median ${result.median.toFixed(2)}, scores ${result.scores.map((v) => v.toFixed(2)).join(' ')})`,
+    );
+    assert.ok(
+        lands(startsOf(hook)) && lands(startsOf(drop)),
+        `found ${found.map(([a, b]) => `${a.toFixed(1)}-${b.toFixed(1)}`).join(', ')}`,
+    );
+    for (let i = 0; i < found.length; i++)
+        for (let j = i + 1; j < found.length; j++)
+            assert.ok(
+                found[i][1] <= found[j][0] + 0.01 || found[j][1] <= found[i][0] + 0.01,
+                'parts never overlap',
+            );
+
+    const one = build([intro, verse, chorus, verse, chorus, bridge, chorus, outro]);
+    assert.equal(findHooks([one.x], SR, 16).parts.length, 1);
 });

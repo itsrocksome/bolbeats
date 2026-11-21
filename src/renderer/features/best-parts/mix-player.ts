@@ -75,6 +75,13 @@ export const mashupOrder = (parts: BestPart[], shuffle = false) => {
     return inSongOrder(bestPath(parts.length, w).map((i) => parts[i])).map((p) => p.id);
 };
 
+// BolBeats: how BolBeats arranges parts on its own (auto picks, your hand-picked parts, ticked parts): when a song
+// has several parts, songs take turns wherever their joins fit (Mashup order); otherwise the smoothest order.
+export const autoOrder = (parts: BestPart[], shuffle = false) =>
+    new Set(parts.map((p) => p.songId)).size < parts.length
+        ? mashupOrder(parts, shuffle)
+        : smartOrder(parts, shuffle);
+
 // How well an order flows: the average fit of its seams (0-1).
 export const flowOf = (parts: BestPart[]) =>
     parts.length < 2
