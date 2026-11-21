@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BolBeats: the Mac music player that plays the best part of every song</title>
+<meta name="description" content="BolBeats is a free, private Mac music player that finds the best part (the chorus or hook) of every song in your library and mixes them back to back like a DJ. Auto mix, mashups, folder playlists. Open source.">
+<meta name="keywords" content="best part of songs, chorus player, play only the chorus, hook finder, auto mix, automix, DJ mix, mashup maker, Mac music player, offline music player, local music, MP3 player for Mac, free music player Mac, open source">
+<link rel="canonical" href="https://itsrocksome.github.io/bolbeats/">
+<link rel="icon" href="img/icon.png">
+<meta name="theme-color" content="#1a0b2e">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="BolBeats">
+<meta property="og:title" content="BolBeats: the Mac music player that plays the best part of every song">
+<meta property="og:description" content="Finds the hook of every song in your library and mixes them back to back, like a DJ who only plays the good bits. Free, private, open source.">
+<meta property="og:url" content="https://itsrocksome.github.io/bolbeats/">
+<meta property="og:image" content="https://itsrocksome.github.io/bolbeats/img/social.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="BolBeats: the best part of every song, mixed">
+<meta name="twitter:description" content="A free, private Mac music player that finds the chorus of every song and mixes them like a DJ.">
+<meta name="twitter:image" content="https://itsrocksome.github.io/bolbeats/img/social.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Instrument+Sans:wght@400;600&display=swap" rel="stylesheet">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "BolBeats",
+  "operatingSystem": "macOS",
+  "applicationCategory": "MultimediaApplication",
+  "description": "A free, private Mac music player that finds the best part (chorus or hook) of every song and mixes them back to back like a DJ.",
+  "softwareVersion": "1.0.0",
+  "license": "https://www.gnu.org/licenses/gpl-3.0.html",
+  "downloadUrl": "https://github.com/itsrocksome/bolbeats/releases/latest",
+  "url": "https://itsrocksome.github.io/bolbeats/",
+  "image": "https://itsrocksome.github.io/bolbeats/img/social.jpg",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {"@type": "Question", "name": "Is there a music player that plays only the chorus or best part of each song?",
+     "acceptedAnswer": {"@type": "Answer", "text": "Yes. BolBeats finds the chorus (the hook) of every song in your Mac's music library and can play only those parts, mixed together with beat-matched transitions."}},
+    {"@type": "Question", "name": "Can I make a DJ mix or mashup from my own MP3s on a Mac?",
+     "acceptedAnswer": {"@type": "Answer", "text": "Yes. Make a best-parts playlist in BolBeats, choose Mashup order so songs take turns, adjust any transition, and save the mix as a WAV file."}},
+    {"@type": "Question", "name": "Does BolBeats work with Spotify or Apple Music?",
+     "acceptedAnswer": {"@type": "Answer", "text": "No. Streaming services don't allow other apps to cut up and mix their music. BolBeats plays the music files on your Mac: MP3, M4A, FLAC, WAV, OGG and more."}},
+    {"@type": "Question", "name": "Is BolBeats free?",
+     "acceptedAnswer": {"@type": "Answer", "text": "Yes. BolBeats is free and open source under the GPL-3.0 licence, with no account, no ads and no tracking."}}
+  ]
+}
+</script>
+<style>
+:root { --bg: #14081f; --ink: #f6eefc; --muted: #c7b6d6; --accent: #ff7ad1; --glass: rgb(255 255 255 / 7%); --edge: rgb(255 255 255 / 12%); }
+* { box-sizing: border-box; }
+html { color-scheme: dark; }
+body { margin: 0; font-family: 'Instrument Sans', system-ui, sans-serif; color: var(--ink); line-height: 1.55;
+  background: radial-gradient(80% 60% at 20% 0%, #5b1f7a 0%, transparent 60%), radial-gradient(70% 50% at 100% 30%, #7a1f55 0%, transparent 60%), var(--bg); background-attachment: fixed; }
+a { color: var(--accent); }
+.wrap { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
+header { display: flex; align-items: center; justify-content: space-between; padding: 18px 0; }
+.brand { display: flex; gap: 10px; align-items: center; font: 800 20px 'Bricolage Grotesque', sans-serif; color: var(--ink); text-decoration: none; }
+.brand img { width: 34px; height: 34px; border-radius: 9px; }
+h1, h2, h3 { font-family: 'Bricolage Grotesque', sans-serif; line-height: 1.02; letter-spacing: -0.02em; margin: 0; }
+.hero { padding: 48px 0 28px; text-align: center; }
+.hero h1 { font-size: clamp(40px, 7vw, 82px); font-weight: 800; }
+.hero p { max-width: 640px; margin: 18px auto 0; font-size: 19px; color: var(--muted); }
+.cta { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin: 28px 0 10px; }
+.btn { display: inline-flex; gap: 8px; align-items: center; padding: 13px 22px; border-radius: 999px; font-weight: 600; text-decoration: none; }
+.btn.primary { background: var(--accent); color: #22071a; }
+.btn.ghost { background: var(--glass); border: 1px solid var(--edge); color: var(--ink); }
+.small { font-size: 14px; color: var(--muted); }
+.shot { margin: 30px auto 0; max-width: 1000px; }
+.shot img { width: 100%; border-radius: 18px; border: 1px solid var(--edge); box-shadow: 0 30px 80px rgb(0 0 0 / 55%); }
+section { padding: 56px 0 8px; }
+section h2 { font-size: clamp(28px, 4vw, 42px); margin-bottom: 18px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.card { padding: 20px; background: var(--glass); border: 1px solid var(--edge); border-radius: 18px; }
+.card h3 { font-size: 20px; margin-bottom: 8px; }
+.card p { margin: 0; color: var(--muted); }
+.pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+.pair img { width: 100%; border-radius: 14px; border: 1px solid var(--edge); }
+details { padding: 14px 18px; background: var(--glass); border: 1px solid var(--edge); border-radius: 14px; margin-bottom: 10px; }
+summary { cursor: pointer; font-weight: 600; }
+details p { color: var(--muted); margin: 10px 0 0; }
+ol.steps { color: var(--muted); padding-left: 20px; }
+footer { padding: 48px 0 40px; color: var(--muted); font-size: 14px; display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="brand" href="./"><img src="img/icon.png" alt="">BolBeats</a>
+    <a class="btn ghost" href="https://github.com/itsrocksome/bolbeats">GitHub</a>
+  </header>
+
+  <main>
+    <div class="hero">
+      <h1>The best part of every song.<br>Mixed.</h1>
+      <p>BolBeats is a free Mac music player that finds the hook of each song in your library and plays them back to back, like a DJ who only plays the good bits. Private, offline, open source.</p>
+      <div class="cta">
+        <a class="btn primary" href="https://github.com/itsrocksome/bolbeats/releases/download/v1.0.0/BolBeats-1.0.0-mac-arm64.dmg">Download for Apple Silicon</a>
+        <a class="btn ghost" href="https://github.com/itsrocksome/bolbeats/releases/download/v1.0.0/BolBeats-1.0.0-mac-x64.dmg">Download for Intel Mac</a>
+      </div>
+      <p class="small">Version 1.0.0 for macOS. Free, no account. <a href="https://github.com/itsrocksome/bolbeats/releases/latest">All releases</a></p>
+      <div class="shot"><img src="img/mix.jpg" alt="BolBeats playing a best-parts playlist with beat-matched transitions between the parts" width="1600" height="1000"></div>
+    </div>
+
+    <section>
+      <h2>What it does</h2>
+      <div class="grid">
+        <div class="card"><h3>Finds the hook</h3><p>BolBeats listens to every song and finds its chorus: the part that repeats, loudest and busiest, cut on the beat and as long as the chorus really is.</p></div>
+        <div class="card"><h3>Mixes like a DJ</h3><p>Best-parts playlists join the parts with transitions picked from tempo and key: beat blend, filter sweep, bass swap, echo out and more.</p></div>
+        <div class="card"><h3>Mashups</h3><p>Let songs take turns, A1, B2, A2, B1, wherever they fit. Drag parts into any order, hear any join, save the mix as a WAV.</p></div>
+        <div class="card"><h3>Mark your own</h3><p>Press B while a song plays, or drag across its waveform. Any number of best parts per song.</p></div>
+        <div class="card"><h3>Folders become playlists</h3><p>Drop songs into folders and they become playlists. A song saved twice shows once. Search everything.</p></div>
+        <div class="card"><h3>Private by design</h3><p>No account, no ads, no tracking. Your music never leaves your Mac; the library runs on your Mac only.</p></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>See it</h2>
+      <div class="pair">
+        <img src="img/home.jpg" alt="BolBeats home with the hook of the day and made-for-you mixes" loading="lazy" width="1600" height="1000">
+        <img src="img/editor.jpg" alt="The best-part editor showing the suggested hook on a song's waveform" loading="lazy" width="1600" height="1000">
+      </div>
+    </section>
+
+    <section>
+      <h2>Get started</h2>
+      <ol class="steps">
+        <li>Download the DMG for your Mac and drag BolBeats into Applications.</li>
+        <li>The first time, if macOS says it can't check the app, open System Settings, Privacy &amp; Security, and click Open Anyway.</li>
+        <li>Put your music in your Music folder (folders are fine), or pick any folder in BolBeats.</li>
+        <li>Open a playlist and press "Make best-parts version". That's it.</li>
+      </ol>
+    </section>
+
+    <section>
+      <h2>Questions</h2>
+      <details><summary>Is there a music player that plays only the chorus or best part of each song?</summary><p>Yes, that is exactly what BolBeats does. It finds the chorus of every song in your library and can play only those parts, mixed together.</p></details>
+      <details><summary>Can I make a DJ mix or mashup from my own MP3s on a Mac?</summary><p>Yes. Make a best-parts playlist, choose Mashup order so songs take turns, adjust any transition, and save it as a WAV file.</p></details>
+      <details><summary>Does it work with Spotify or Apple Music?</summary><p>No. Streaming services don't allow other apps to cut up and mix their music. BolBeats plays the music files on your Mac: MP3, M4A, FLAC, WAV, OGG and more.</p></details>
+      <details><summary>Is it free?</summary><p>Yes, free and open source under the GPL-3.0 licence.</p></details>
+    </section>
+  </main>
+
+  <footer>
+    <span>BolBeats is open source, built on <a href="https://github.com/jeffvli/feishin">Feishin</a> and <a href="https://www.navidrome.org">Navidrome</a>. <a href="https://github.com/itsrocksome/bolbeats">Source on GitHub</a>.</span>
+    <img src="https://hits.sh/itsrocksome.github.io/bolbeats.svg?label=visits&amp;color=7a3cff" alt="Visits" height="20">
+  </footer>
+</div>
+</body>
+</html>
