@@ -148,8 +148,10 @@ export function frames(x: Float32Array, sr: number) {
         chroma: [] as number[][],
         flux: [] as number[],
         mfcc: [] as number[][],
+        mid: [] as number[], // BolBeats: power in the voice range, 300-3400 Hz (where a line of lyrics lives)
         rms: [] as number[],
     };
+    const [v0, v1] = [Math.ceil((300 * N) / sr), Math.floor((3400 * N) / sr)];
     const re = new Float32Array(N);
     const im = new Float32Array(N);
     const lin = new Float32Array(nb); // 10 x magnitude, i.e. expm1 of the log magnitude
@@ -195,6 +197,9 @@ export function frames(x: Float32Array, sr: number) {
             mfcc[c] = v;
         }
         out.mfcc.push(mfcc);
+        let voice = 0;
+        for (let k = v0; k <= v1 && k < nb; k++) voice += lin[k] * lin[k];
+        out.mid.push(voice);
         out.rms.push(Math.sqrt(e / N));
         out.flux.push(flux);
         out.chroma.push(chroma);
@@ -444,6 +449,42 @@ export function findHooks(
     const duration = half.length / sr;
     const f = frames(half, sr);
     const fps = sr / HOP;
+    // BolBeats: where a sung or rapped line pauses. The voice range smoothed over ~1/3 s (shorter and the gaps between
+    // rapped words count too); a pause is at least 1/4 s below the song's 35th percentile, a word is above its 60th.
+    // A part's last words often spill just past the bar line (Still Rollin's hook ended 0.8 s after its part did).
+    const voice = (() => {
+        const r = Math.max(1, Math.round(0.17 * fps));
+        const v = f.mid.map((_, i) => mean(f.mid.slice(Math.max(0, i - r), i + r + 1)));
+        const sorted = [...v].sort((a, b) => a - b);
+        return {
+            gap: sorted[Math.floor(sorted.length * 0.35)],
+            run: sorted[Math.floor(sorted.length * 0.6)],
+            v,
+        };
+    })();
+    const vAt = (t: number) =>
+        voice.v[Math.max(0, Math.min(voice.v.length - 1, Math.round(t * fps)))] ?? 0;
+    const words = (a: number, b: number) => {
+        for (let t = a; t < b; t += 0.05) if (vAt(t) >= voice.run) return true;
+        return false;
+    };
+    // the first pause of at least 1/4 s going forward (dir 1) or back (dir -1) from t, within `max` s
+    const pause = (t: number, dir: -1 | 1, max: number, lo: number, hi: number) => {
+        let run = 0;
+        for (let k = 1; k * 0.05 <= max; k++) {
+            const c = t + dir * k * 0.05;
+            if (c < lo || c > hi) return null;
+            run = vAt(c) <= voice.gap ? run + 1 : 0;
+            if (run >= 5) return c - dir * 0.2; // where the pause began (going forward) or ended (going back)
+        }
+        return null;
+    };
+    // a line still being sung at the end finishes first (if it ends within 1.5 s: more is the next line)
+    const breathAfter = (t: number, limit: number) =>
+        words(t, t + 0.6) ? (pause(t, 1, 1.5, 0, limit) ?? t) : t;
+    // a pickup running into the start comes along (if it began within 1.5 s)
+    const breathBefore = (t: number, notBefore: number) =>
+        words(t - 0.6, t) ? (pause(t, -1, 1.5, notBefore, duration) ?? t) : t;
     const per = Math.max(1, Math.round(fps * BLOCK));
     const bs = per / fps; // a block's real length (0.51 s at 11 kHz), so times don't drift late in the song
     const n = Math.floor(f.rms.length / per);
@@ -542,7 +583,12 @@ export function findHooks(
             stopAt,
             snapQuiet(half, sr, onBeat(start + phrases * phrase), 0.35),
         );
-        return { a, end: Math.max(end, Math.min(stopAt, start + 8)), start };
+        // never stop or start in the middle of a line: carry on to its breath, or begin at the breath before it
+        const ended = breathAfter(
+            Math.max(end, Math.min(stopAt, start + 8)),
+            Math.min(duration, stopAt),
+        );
+        return { a, end: ended, start: breathBefore(start, notBefore) };
     };
 
     const hit = (i: number, j: number) => (S[i]?.[j - 1] || S[i]?.[j] || S[i]?.[j + 1] ? 1 : 0);
@@ -968,8 +1014,14 @@ export function play(
         const shelf = ctx.createBiquadFilter();
         const hp = ctx.createBiquadFilter();
         const lp = ctx.createBiquadFilter();
+        const mids = ctx.createBiquadFilter();
         const g = ctx.createGain();
         src.buffer = it.buffer!;
+        // BolBeats: the voice range, turned down on the way out of an overlap so two vocals never talk over each other
+        mids.type = 'peaking';
+        mids.frequency.value = 1400;
+        mids.Q.value = 0.6;
+        mids.gain.value = 0;
         shelf.type = 'lowshelf';
         shelf.frequency.value = 220;
         hp.type = 'highpass';
@@ -977,13 +1029,14 @@ export function play(
         lp.type = 'lowpass';
         lp.frequency.value = 20000;
         g.gain.value = 0;
-        src.connect(shelf).connect(hp).connect(lp).connect(g).connect(master);
+        src.connect(shelf).connect(hp).connect(lp).connect(mids).connect(g).connect(master);
         src.start(t0 + at[i], it.off ?? 0, it.dur);
         return {
             end: t0 + at[i] + it.dur,
             g,
             hp,
             lp,
+            mids,
             shelf,
             src,
             start: t0 + at[i],
@@ -1002,6 +1055,15 @@ export function play(
         const s = t0 + t!.at!;
         const len = t!.len!;
         const e = s + len;
+        // DJ "mid swap" on overlaps between different songs: the outgoing voice range drops away early while the
+        // incoming one comes up late, so the words of one song finish before the next one's start
+        if (t!.type === 'bass' || t!.type === 'blend' || t!.type === 'handoff') {
+            A.mids.gain.setValueAtTime(0, s);
+            A.mids.gain.linearRampToValueAtTime(-18, s + len * 0.35);
+            B.mids.gain.setValueAtTime(-18, s);
+            B.mids.gain.setValueAtTime(-18, s + len * 0.5);
+            B.mids.gain.linearRampToValueAtTime(0, e);
+        }
         switch (t!.type) {
             case 'bass': {
                 const mid = s + len / 2;

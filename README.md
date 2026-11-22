@@ -136,7 +136,9 @@ Checks: `pnpm run lint` (types, code and styles) and `node --test test/*.test.ts
 
 ## Credits
 - [Feishin](https://github.com/jeffvli/feishin) by jeffvli and contributors, the player BolBeats is built on (GPL-3.0).
-- [Navidrome](https://github.com/navidrome/navidrome), bundled as the music library (GPL-3.0).
+- [Navidrome](https://github.com/navidrome/navidrome) 0.64.2, bundled unmodified as the music library (GPL-3.0); source for
+  that exact version: [v0.64.2](https://github.com/navidrome/navidrome/tree/v0.64.2). `scripts/get-navidrome.mjs` fetches
+  the same release and checks its checksum.
 - Fonts: [Bricolage Grotesque](https://fonts.google.com/specimen/Bricolage+Grotesque) and
   [Instrument Sans](https://fonts.google.com/specimen/Instrument+Sans) (SIL Open Font License).
 - Song details from [iTunes Search](https://performance-partners.apple.com/search-api), [MusicBrainz](https://musicbrainz.org)

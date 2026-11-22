@@ -1,6 +1,7 @@
 import type { QueryClient } from '@tanstack/react-query';
 
 import { queryKeys } from '/@/renderer/api/query-keys';
+import { allLibrarySongs } from '/@/renderer/features/library-tools/library-songs';
 import { songsQueries } from '/@/renderer/features/songs/api/songs-api';
 import { AUTO_DJ_STRATEGY, type AutoDJStrategy } from '/@/renderer/store/settings.store';
 import { shuffleInPlace } from '/@/renderer/utils/shuffle';
@@ -216,6 +217,22 @@ const collectSongsSimilar = async (args: AutoDjSongCollectArgs): Promise<Song[]>
             if (args.onlySimilar && selected.length > 0) {
                 return selected;
             }
+        }
+    }
+
+    // BolBeats: songs from the same folder as the one playing (your folders are your playlists: Punjabi, GTA6...),
+    // before falling back to anything in the library
+    const dir = (path?: null | string) => (path ? path.slice(0, path.lastIndexOf('/')) : '');
+    if (remainingCount() > 0 && dir(args.currentSong?.path)) {
+        const here = dir(args.currentSong?.path);
+        const folderSongs = (await allLibrarySongs().catch(() => [])).filter(
+            (song) =>
+                dir(song.path) === here &&
+                isSongAvailable(song, args.allowDuplicates, args.queueSongIdSet, selectedSongIds),
+        );
+        for (const song of shuffleInPlace(folderSongs).slice(0, remainingCount())) {
+            selectedSongIds.add(song.id);
+            selected.push(song);
         }
     }
 

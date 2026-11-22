@@ -15,6 +15,7 @@ import {
     openPartEditor,
     openSongMenu,
     partLength,
+    playFullSong,
     Poster,
     QuickKeySelect,
 } from '/@/renderer/features/best-parts/components/shared';
@@ -33,6 +34,7 @@ import {
     toggleMixPause,
     useMixPlayer,
 } from '/@/renderer/features/best-parts/mix-player';
+import { refreshPlan } from '/@/renderer/features/best-parts/refresh-mix';
 import { shareMix } from '/@/renderer/features/best-parts/share-actions';
 import {
     ALL_PARTS_MIX,
@@ -68,6 +70,7 @@ const MixRoute = () => {
     const [openJoin, setOpenJoin] = useState<null | number>(null);
     const [drag, setDrag] = useState<null | number>(null);
     const [over, setOver] = useState<null | number>(null);
+    const [menuFor, setMenuFor] = useState<null | string>(null); // BolBeats: a part's ⋯ menu (right-click opens it too)
 
     // "All best parts" is a real mix record so its order and transition picks are remembered;
     // it follows the part library: new parts join in the smart order, deleted ones leave.
@@ -98,6 +101,12 @@ const MixRoute = () => {
     const parts = useMemo(
         () => (mix?.partIds ?? []).map((id) => partMap[id]).filter(Boolean),
         [mix, partMap],
+    );
+    // BolBeats: songs here got new or longer parts since the playlist was made (refresh-mix.ts)
+    const fresh = useMemo(
+        () =>
+            mix && !isAll ? refreshPlan(mix.partIds, partMap, mix.updated ?? mix.created) : null,
+        [isAll, mix, partMap],
     );
     const serverId = useAuthStore((s) => s.currentServer?.id);
     const { data: source } = useQuery({
@@ -152,6 +161,25 @@ const MixRoute = () => {
         preview(i, nextPicks);
     };
     const playFrom = (i: number) => playMixById(mix.id, i);
+    const refresh = () => {
+        if (!fresh?.changed) {
+            toast.info({ message: 'Every song here already has its newest parts in it.' });
+            return;
+        }
+        const next = mix.auto ? autoOrder(fresh.partIds.map((id) => partMap[id])) : fresh.partIds;
+        updateMix(mix.id, { partIds: next });
+        // parts it replaced that nothing uses any more (never ones you made) leave your Best parts too
+        const mixes = Object.values(useBestPartsStore.getState().mixes);
+        for (const id of mix.partIds)
+            if (
+                !next.includes(id) &&
+                partMap[id] &&
+                partMap[id].auto !== false &&
+                !mixes.some((m) => m.partIds.includes(id))
+            )
+                useBestPartsStore.getState().deletePart(id);
+        toast.success({ message: 'This playlist now has its songs’ newest best parts.' });
+    };
     const exportMix = async () => {
         setSaving(true);
         try {
@@ -356,6 +384,14 @@ const MixRoute = () => {
                                             Rename
                                         </DropdownMenu.Item>
                                     )}
+                                    {!isAll && (
+                                        <DropdownMenu.Item
+                                            leftSection={<Icon icon="refresh" />}
+                                            onClick={refresh}
+                                        >
+                                            Update with new parts
+                                        </DropdownMenu.Item>
+                                    )}
                                     <DropdownMenu.Item
                                         disabled={!parts.length || saving}
                                         leftSection={<Icon icon="download" />}
@@ -405,6 +441,21 @@ const MixRoute = () => {
                     </aside>
 
                     <section aria-label="Parts" className={styles.mixMain}>
+                        {fresh?.changed && (
+                            <div className={styles.listHead} role="status">
+                                <Text size="sm">
+                                    Some songs here have new or longer best parts.
+                                </Text>
+                                <Button
+                                    leftSection={<Icon icon="refresh" />}
+                                    onClick={refresh}
+                                    size="compact-sm"
+                                    variant="filled"
+                                >
+                                    Update playlist
+                                </Button>
+                            </div>
+                        )}
                         <div className={styles.listHead}>
                             <Text isMuted size="sm">
                                 {parts.length > 1
@@ -448,7 +499,10 @@ const MixRoute = () => {
                                                 styles.row,
                                                 playingId === p.id && styles.isPlaying,
                                             )}
-                                            onContextMenu={(e) => openSongMenu(p.songId, e)}
+                                            onContextMenu={(e) => {
+                                                e.preventDefault();
+                                                setMenuFor(p.id);
+                                            }}
                                         >
                                             <button
                                                 aria-label={`Play from ${p.title}`}
@@ -488,7 +542,11 @@ const MixRoute = () => {
                                                         variant="subtle"
                                                     />
                                                 )}
-                                                <DropdownMenu position="bottom-end">
+                                                <DropdownMenu
+                                                    onChange={(o) => setMenuFor(o ? p.id : null)}
+                                                    opened={menuFor === p.id}
+                                                    position="bottom-end"
+                                                >
                                                     <DropdownMenu.Target>
                                                         <ActionIcon
                                                             aria-label={`More for ${p.title}`}
@@ -534,6 +592,12 @@ const MixRoute = () => {
                                                             }
                                                         >
                                                             Change this part…
+                                                        </DropdownMenu.Item>
+                                                        <DropdownMenu.Item
+                                                            leftSection={<Icon icon="mediaPlay" />}
+                                                            onClick={() => playFullSong(p.songId)}
+                                                        >
+                                                            Play the full song
                                                         </DropdownMenu.Item>
                                                         {!isAll && (
                                                             <DropdownMenu.Item

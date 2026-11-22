@@ -24,7 +24,7 @@ import {
     type BestPart,
     useBestPartsStore,
 } from '/@/renderer/features/best-parts/store/best-parts.store';
-import { disliked, skippedPart } from '/@/renderer/features/best-parts/store/taste.store';
+import { disliked, liked, skippedPart } from '/@/renderer/features/best-parts/store/taste.store';
 import { formatClock } from '/@/renderer/features/best-parts/utils';
 import { useAuthStore } from '/@/renderer/store/auth.store';
 import {
@@ -32,6 +32,7 @@ import {
     subscribePlayerVolume,
     usePlayerStoreBase,
 } from '/@/renderer/store/player.store';
+import { useSettingsStore } from '/@/renderer/store/settings.store';
 import { useTimestampStoreBase } from '/@/renderer/store/timestamp.store';
 import { toast } from '/@/shared/components/toast/toast';
 import { PlayerStatus } from '/@/shared/types/types';
@@ -296,7 +297,9 @@ export const playParts = async (
     opts: { label: string; mixId: null | string; offset?: number; preview?: number },
 ) => {
     stopMix();
-    const run = runId;
+    // the whole run (not a restart from a later part), so next / previous can move through it
+    if (opts.preview == null && !opts.offset) run = { label: opts.label, parts, picks };
+    const runNow = runId;
     usePlayerStoreBase.getState().mediaPause();
     const use = opts.preview != null ? parts.slice(opts.preview, opts.preview + 2) : parts;
     if (!use.length) return;
@@ -319,7 +322,7 @@ export const playParts = async (
             ),
         ),
     ); // decode side by side
-    if (run !== runId) return; // stopped while loading
+    if (runNow !== runId) return; // stopped while loading
     // BolBeats: a part whose song can't be loaded (its file was deleted, say) is left out, not the whole mix
     const ok = use.filter((_, i) => 'b' in got[i]);
     const buffers = got.flatMap((g) => ('b' in g ? [g.b] : []));
@@ -369,11 +372,66 @@ export const playParts = async (
     ticker = setInterval(() => {
         const s = useMixPlayer.getState();
         const e = mixElapsed();
-        if (e >= s.total) return stopMix();
+        if (e >= s.total) {
+            // BolBeats: with Auto DJ on, a finished best-parts playlist carries on with parts that join its last one
+            const more = s.preview ? null : carryOn;
+            carryOn = null;
+            if (more?.length && autoDjOn())
+                return void playParts(more, {}, { label: 'Auto DJ', mixId: null });
+            return stopMix();
+        }
         const index = s.at.findLastIndex((a) => a <= e);
         if (index !== s.index) useMixPlayer.setState({ index });
+        // on the last part: choose what comes next and get it ready, so the next run starts quickly
+        if (index === s.partIds.length - 1 && !s.preview && !carryOn && autoDjOn()) {
+            const last = useBestPartsStore.getState().parts[s.partIds[index]];
+            carryOn = last ? nextRun(last) : null;
+            if (carryOn) void prepareParts(carryOn);
+        }
     }, 200);
 };
+
+// ---------- Auto DJ for best parts ----------
+
+let carryOn: BestPart[] | null = null;
+// the parts of the current run, for next / previous when it isn't a saved playlist
+let run: null | { label: string; parts: BestPart[]; picks: Record<string, string> } = null;
+const heardRuns = new Set<string>(); // parts played since BolBeats started, so Auto DJ keeps it fresh
+const autoDjOn = () => Boolean(useSettingsStore.getState().autoDJ?.enabled);
+
+// Up to 8 parts, one per song, that join well with `last` (thumbs up first, never thumbs down or songs just heard)
+const nextRun = (last: BestPart): BestPart[] | null => {
+    const all = Object.values(useBestPartsStore.getState().parts).filter(
+        (p) => p.songId !== last.songId && !disliked(p.id),
+    );
+    let pool = all.filter((p) => !heardRuns.has(p.id));
+    if (pool.length < 4) {
+        heardRuns.clear();
+        pool = all;
+    }
+    const ranked = pool
+        .map(
+            (p) =>
+                [p, fitOf(last, p).total + (liked(p.id) ? 0.15 : 0) + Math.random() * 0.1] as const,
+        )
+        .sort((a, b) => b[1] - a[1])
+        .map(([p]) => p);
+    const picked: BestPart[] = [];
+    for (const p of ranked) {
+        if (picked.length >= 8) break;
+        if (!picked.some((q) => q.songId === p.songId)) picked.push(p);
+    }
+    if (!picked.length) return null;
+    const [first, ...rest] = picked;
+    const parts = useBestPartsStore.getState().parts;
+    return [first, ...autoOrder(rest).map((id) => parts[id])];
+};
+useMixPlayer.subscribe((s, prev) => {
+    if (s.status === 'playing' && prev.status === 'loading')
+        s.partIds.forEach((id) => heardRuns.add(id));
+    if (s.status === 'idle' && prev.status !== 'idle' && !useMixPlayer.getState().partIds.length)
+        carryOn = null;
+});
 
 // The main player and a mix never play at once; volume follows the main player.
 subscribePlayerStatus(({ status }) => {
@@ -383,35 +441,56 @@ subscribePlayerVolume(applyVolume);
 
 // ---------- presets, export, "mark this moment" ----------
 
-export const playMixById = (mixId: string, from = 0) => {
+// from = position in the playlist's own list; dir says which way to look when that part is left out
+export const playMixById = (mixId: string, from = 0, dir: -1 | 1 = 1) => {
     const { mixes, parts } = useBestPartsStore.getState();
     const mix = mixes[mixId];
     if (!mix) return false;
     // BolBeats: playlists BolBeats made (and All best parts) leave out parts you've given a thumbs down or keep skipping;
     // a playlist you made plays what you put in it
     const list = mix.partIds
-        .map((id) => parts[id])
-        .filter((p) => p && (!(mix.auto || mixId === ALL_PARTS_MIX) || !disliked(p.id)));
+        .map((id, i) => [parts[id], i] as const)
+        .filter(([p]) => p && (!(mix.auto || mixId === ALL_PARTS_MIX) || !disliked(p.id)));
     if (!list.length) return false;
-    const at = Math.max(0, Math.min(from, list.length - 1));
-    playParts(list.slice(at), mix.picks, { label: mix.name, mixId, offset: at });
+    let at =
+        dir > 0 ? list.findIndex(([, i]) => i >= from) : list.findLastIndex(([, i]) => i <= from);
+    if (at < 0) at = dir > 0 ? list.length - 1 : 0;
+    playParts(
+        list.slice(at).map(([p]) => p),
+        mix.picks,
+        { label: mix.name, mixId, offset: at },
+    );
     return true;
 };
 
 // BolBeats: previous / next part of the playing best-parts playlist (restarts the mix from that part).
+// BolBeats: also for parts that aren't a saved playlist (Made for you, Tune your own, a song's parts, Auto DJ): those
+// used to ignore next / previous. Previous on the first part, or a few seconds into any part, starts it again; next on
+// the last part carries on with Auto DJ when it's on, else stops.
 export const skipMixPart = (d: -1 | 1) => {
     const s = useMixPlayer.getState();
-    if (!s.mixId || s.preview || s.status === 'idle' || s.status === 'loading') return;
-    const ids = useBestPartsStore.getState().mixes[s.mixId]?.partIds ?? [];
-    const here = ids.indexOf(s.partIds[s.index]);
-    // "previous" a few seconds into a part goes back to its start, like a normal player
-    const back = d < 0 && mixElapsed() - (s.at[s.index] ?? 0) > 3 ? 0 : d;
-    if (here < 0 || here + back < 0 || here + back >= ids.length) return;
-    // moving on before a part's halfway point teaches BolBeats you'd rather not hear it
+    if (s.preview || s.status === 'idle' || s.status === 'loading') return;
     const part = useBestPartsStore.getState().parts[s.partIds[s.index]];
-    if (d > 0 && part && mixElapsed() - (s.at[s.index] ?? 0) < (part.end - part.start) / 2)
-        skippedPart(part.id);
-    playMixById(s.mixId, here + back);
+    const into = mixElapsed() - (s.at[s.index] ?? 0);
+    let step: -1 | 0 | 1 = d < 0 && into > 3 ? 0 : d;
+    const ids = s.mixId
+        ? (useBestPartsStore.getState().mixes[s.mixId]?.partIds ?? [])
+        : (run?.parts.map((p) => p.id) ?? []);
+    const here = s.mixId ? ids.indexOf(s.partIds[s.index]) : s.offset + s.index;
+    if (here < 0) return;
+    if (here + step < 0) step = 0;
+    // moving on before a part's halfway point teaches BolBeats you'd rather not hear it
+    if (d > 0 && part && into < (part.end - part.start) / 2) skippedPart(part.id);
+    if (here + step >= ids.length) {
+        const more = autoDjOn() && part ? nextRun(part) : null;
+        return more?.length
+            ? void playParts(more, {}, { label: 'Auto DJ', mixId: null })
+            : stopMix();
+    }
+    if (s.mixId) return void playMixById(s.mixId, here + step, step < 0 ? -1 : 1);
+    if (!run) return;
+    const at = here + step;
+    void playParts(run.parts.slice(at), run.picks, { label: run.label, mixId: null, offset: at });
 };
 
 const typing = (e: KeyboardEvent) =>

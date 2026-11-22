@@ -14,11 +14,10 @@ import {
     Cover,
     facts,
     openPartEditor,
-    openSongMenu,
     partLength,
     PartStrip,
     QuickKeys,
-    SongMenuButton,
+    SongPartsMenu,
 } from '/@/renderer/features/best-parts/components/shared';
 import { TasteCard } from '/@/renderer/features/best-parts/components/taste-card';
 import {
@@ -52,6 +51,7 @@ const BestPartsRoute = () => {
     const mixMap = useBestPartsStore((s) => s.mixes);
     const playing = useMixPlayer((s) => (s.status === 'idle' ? null : s.partIds[s.index]));
     const [picked, setPicked] = useState<Set<string>>(new Set());
+    const [menuFor, setMenuFor] = useState<null | string>(null); // BolBeats: the ⋯ menu open (right-click opens it too)
 
     const parts = useMemo(() => Object.values(partMap), [partMap]);
 
@@ -240,7 +240,10 @@ const BestPartsRoute = () => {
                         <li
                             className={styles.song}
                             key={g[0].songId}
-                            onContextMenu={(e) => openSongMenu(g[0].songId, e)}
+                            onContextMenu={(e) => {
+                                e.preventDefault();
+                                setMenuFor(g[0].songId);
+                            }}
                         >
                             <Cover part={g[0]} />
                             <div className={styles.songMeta}>
@@ -296,7 +299,11 @@ const BestPartsRoute = () => {
                                     tooltip={{ label: 'Edit parts' }}
                                     variant="subtle"
                                 />
-                                <SongMenuButton songId={g[0].songId} title={g[0].title} />
+                                <SongPartsMenu
+                                    onOpenChange={(o) => setMenuFor(o ? g[0].songId : null)}
+                                    opened={menuFor === g[0].songId}
+                                    parts={g}
+                                />
                             </span>
                         </li>
                     ))}

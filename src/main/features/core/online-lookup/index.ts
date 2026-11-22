@@ -9,8 +9,8 @@ import path from 'path';
 import { store } from '/@/main/features/core/settings';
 import log from '/@/main/logger';
 
-// Generic client name on purpose: nothing identifying about the user is sent.
-const UA = 'BolBeats/1.0 (personal music player)';
+// Nothing identifying about the user is sent: the contact is the project's public page, which MusicBrainz asks for.
+const UA = `BolBeats/${app.getVersion()} ( https://github.com/itsrocksome/bolbeats )`;
 const IMAGE_HOSTS = /(^|\.)(mzstatic\.com|coverartarchive\.org|archive\.org)$/;
 
 const getJson = async (url: string) => {

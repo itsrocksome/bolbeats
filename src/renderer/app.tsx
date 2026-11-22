@@ -13,6 +13,7 @@ import i18n from '/@/i18n/i18n';
 import { connectLocalLibrary } from '/@/renderer/features/local-library/connect-local-library';
 import '/@/renderer/features/best-parts/more-parts';
 import '/@/renderer/features/best-parts/share-actions';
+import '/@/renderer/features/best-parts/mix-remote';
 import '/@/renderer/features/bolify-folder/folder-playlists';
 import '/@/renderer/features/bolify-folder/folder-sync';
 import '/@/renderer/features/library-tools/auto-details';

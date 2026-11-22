@@ -378,17 +378,11 @@
 .progress > span {
     position: absolute;
     inset: 0 auto 0 0;
-    background: radial-gradient(circle, var(--theme-colors-primary) 0 2px, transparent 2.6px) 0 50% / 8px 10px repeat-x;
+
+    /* BolBeats: a solid line in the best-parts colour (it was dotted) */
+    background: var(--theme-colors-primary);
     border-radius: 2px;
     filter: drop-shadow(0 0 2px rgb(255 122 209 / 60%));
-}
-
-.progress b {
-    position: absolute;
-    top: -4px;
-    width: 2px;
-    height: 12px;
-    background: var(--theme-colors-primary);
 }
 
 @container (width < 720px) {

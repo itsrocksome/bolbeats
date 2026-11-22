@@ -59,6 +59,7 @@ import { SegmentedControl } from '/@/shared/components/segmented-control/segment
 import { Select } from '/@/shared/components/select/select';
 import { Slider } from '/@/shared/components/slider/slider';
 import { Stack } from '/@/shared/components/stack/stack';
+import { Text } from '/@/shared/components/text/text';
 import { useMediaQuery } from '/@/shared/hooks/use-media-query';
 import { useThrottledCallback } from '/@/shared/hooks/use-throttled-callback';
 import { useThrottledValue } from '/@/shared/hooks/use-throttled-value';
@@ -301,19 +302,32 @@ const AutoDJButton = () => {
         <Popover position="top-end" withArrow>
             <Popover.Target>
                 <Button
+                    aria-pressed={settings.enabled}
                     onClick={(e) => {
                         e.stopPropagation();
                     }}
                     size="compact-xs"
                     style={{ color: settings.enabled ? 'var(--theme-colors-primary)' : undefined }}
-                    uppercase
+                    title={
+                        settings.enabled
+                            ? 'Auto DJ is on: the music keeps going when your queue runs out'
+                            : 'Auto DJ: keep the music going when your queue runs out'
+                    }
                     variant="transparent"
                 >
-                    {t('setting.autoDJ')}
+                    {settings.enabled ? 'Auto DJ on' : 'Auto DJ'}
                 </Button>
             </Popover.Target>
             <Popover.Dropdown maw={480} miw={320} onClick={(e) => e.stopPropagation()} p="sm">
                 <Stack gap="sm">
+                    {/* BolBeats: say what it does, in plain words */}
+                    <Text size="sm">
+                        Keeps the music going. When your queue is about to run out, BolBeats adds
+                        songs that fit: the same artists, songs from the same folder, then the rest
+                        of your library. With Best parts only on, they play as best parts too. A
+                        best-parts playlist that ends carries on with more best parts that join well
+                        with its last one.
+                    </Text>
                     <Paper p="md" radius="md">
                         <ListConfigTable options={enabledOptions} />
                     </Paper>

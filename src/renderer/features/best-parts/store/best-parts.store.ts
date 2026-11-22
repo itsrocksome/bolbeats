@@ -32,6 +32,7 @@ export type PartMix = {
     partIds: string[]; // play order
     picks: Record<string, TransitionType>; // "partA>partB" -> chosen transition
     sourcePlaylistId?: string; // the full-song playlist this is the best-parts version of
+    updated?: number; // BolBeats: last change, so "Update with new parts" only offers parts newer than it
 };
 
 type Actions = {
@@ -101,7 +102,14 @@ export const useBestPartsStore = createWithEqualityFn<Actions & State>()(
                 })),
             updateMix: (id, patch) =>
                 setState((s) =>
-                    s.mixes[id] ? { mixes: { ...s.mixes, [id]: { ...s.mixes[id], ...patch } } } : s,
+                    s.mixes[id]
+                        ? {
+                              mixes: {
+                                  ...s.mixes,
+                                  [id]: { ...s.mixes[id], ...patch, updated: Date.now() },
+                              },
+                          }
+                        : s,
                 ),
         }),
         {

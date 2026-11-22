@@ -30,11 +30,13 @@ import {
     type BestPart,
     useBestPartsStore,
 } from '/@/renderer/features/best-parts/store/best-parts.store';
+import { learnedTaste } from '/@/renderer/features/best-parts/store/taste.store';
 import { editedPart } from '/@/renderer/features/best-parts/store/taste.store';
 import { formatClock } from '/@/renderer/features/best-parts/utils';
 import { Button } from '/@/shared/components/button/button';
 import { Group } from '/@/shared/components/group/group';
 import { Icon } from '/@/shared/components/icon/icon';
+import { Slider } from '/@/shared/components/slider/slider';
 import { Spinner } from '/@/shared/components/spinner/spinner';
 import { Switch } from '/@/shared/components/switch/switch';
 import { Text } from '/@/shared/components/text/text';
@@ -98,6 +100,11 @@ export const PartEditor = ({
     const [snap, setSnap] = useState(true);
     const [playing, setPlaying] = useState(false);
     const [saving, setSaving] = useState(false);
+    // BolBeats: listen first, then mark. `head` is where listening starts (and follows the music while it plays);
+    // listening plays the song on from there, previewing plays just the selection
+    const [head, setHead] = useState(0);
+    const listening = useRef(false);
+    const downSel = useRef<null | { editing: null | string; sel: [number, number] }>(null);
     const canvas = useRef<HTMLCanvasElement>(null);
     const preview = useRef<null | ReturnType<typeof playRange>>(null);
     const drag = useRef<null | { anchor?: number; edge?: 0 | 1 }>(null);
@@ -131,7 +138,7 @@ export const PartEditor = ({
     const suggest = useCallback(() => {
         if (!buf) return;
         setEditingId(null);
-        suggestHooksAsync(buf).then((all) => {
+        suggestHooksAsync(buf, undefined, learnedTaste().minPart ?? undefined).then((all) => {
             setSel(all[0]);
             setFound([...all].sort(([a], [b]) => a - b));
         });
@@ -222,7 +229,13 @@ export const PartEditor = ({
         g.fillStyle = fg;
         for (const px of [a, b]) g.fillRect(px - dpr, 0, 2 * dpr, H);
         if (preview.current) g.fillRect(x(preview.current.position()), 0, 2 * dpr, H);
-    }, [dur, editingId, mono, parts, sel]);
+        else if (head > 0) {
+            // where Listen starts
+            g.globalAlpha = 0.6;
+            g.fillRect(x(head), 0, dpr, H);
+            g.globalAlpha = 1;
+        }
+    }, [dur, editingId, head, mono, parts, sel]);
 
     useEffect(() => {
         draw();
@@ -237,28 +250,58 @@ export const PartEditor = ({
     }, [draw, playing]);
 
     useEffect(() => {
+        if (!playing) return;
+        const t = setInterval(() => {
+            if (listening.current && preview.current) setHead(preview.current.position());
+        }, 200);
+        return () => clearInterval(t);
+    }, [playing]);
+
+    useEffect(() => {
         const ro = new ResizeObserver(draw);
         if (canvas.current) ro.observe(canvas.current);
         return () => ro.disconnect();
     }, [draw]);
 
     const stopPreview = () => {
+        if (listening.current && preview.current) setHead(preview.current.position());
         preview.current?.stop();
         preview.current = null;
+        listening.current = false;
         setPlaying(false);
     };
     const togglePreview = () => {
         if (!buf) return;
-        if (preview.current) return stopPreview();
+        if (preview.current && !listening.current) return stopPreview();
+        stopPreview();
         preview.current = playRange(buf, sel[0], sel[1], stopPreview);
         setPlaying(true);
     };
+    // play the song on from `from` (until you pause), with the playhead following
+    const listen = (from: number) => {
+        if (!buf) return;
+        stopPreview();
+        const at = Math.max(0, Math.min(dur - 0.5, from));
+        listening.current = true;
+        preview.current = playRange(buf, at, dur, stopPreview);
+        setHead(at);
+        setPlaying(true);
+    };
+    const now = () => (listening.current && preview.current ? preview.current.position() : head);
 
     const setRange = (a: number, b: number) => {
         const lo = Math.max(0, Math.min(a, b));
         const hi = Math.min(dur, Math.max(a, b));
         setSel([lo, hi]);
-        if (preview.current) stopPreview();
+        if (preview.current && !listening.current) stopPreview(); // marking while listening keeps the music going
+    };
+    const markStart = () => {
+        const t = now();
+        setRange(t, sel[1] > t + 3 ? sel[1] : Math.min(dur, t + 30));
+    };
+    const markEnd = () => {
+        const t = now();
+        setRange(sel[0] < t - 3 ? sel[0] : Math.max(0, t - 30), t);
     };
 
     const timeAt = (e: PointerEvent) => {
@@ -269,6 +312,7 @@ export const PartEditor = ({
         const t = timeAt(e);
         const near = (8 / e.currentTarget.clientWidth) * dur;
         e.currentTarget.setPointerCapture(e.pointerId);
+        downSel.current = { editing: editingId, sel };
         if (Math.abs(t - sel[0]) < near) drag.current = { edge: 0 };
         else if (Math.abs(t - sel[1]) < near) drag.current = { edge: 1 };
         else {
@@ -387,25 +431,72 @@ export const PartEditor = ({
         <div
             className={styles.root}
             onKeyDown={(e) => {
-                if (e.key === ' ' && !(e.target as HTMLElement).closest('button, input')) {
+                const typing = (e.target as HTMLElement).closest('button, input');
+                if (e.key === ' ' && !typing) {
                     e.preventDefault();
-                    togglePreview();
+                    if (playing && listening.current) stopPreview();
+                    else if (listening.current || head > 0) listen(head);
+                    else togglePreview();
                 }
+                if (e.key === '[' && !typing) markStart();
+                if (e.key === ']' && !typing) markEnd();
             }}
             tabIndex={-1}
         >
             <Text isMuted size="sm">
-                Drag across a part you love. Drag its edges to adjust. Click a saved part to edit
-                it.
+                Listen first: click anywhere on the song (or drag the bar below) to hear it from
+                there, then press Start here and End here, or [ and ]. You can also drag across the
+                part you love and drag its edges.
             </Text>
             <canvas
                 aria-label="Song waveform. Drag to select a best part."
                 className={styles.wave}
                 onPointerDown={onDown}
                 onPointerMove={onMove}
-                onPointerUp={() => (drag.current = null)}
+                onPointerUp={(e) => {
+                    // a click without a drag: listen from there, keeping the part you had
+                    const d = drag.current;
+                    drag.current = null;
+                    const t = timeAt(e);
+                    if (d?.anchor != null && Math.abs(t - d.anchor) < 0.004 * dur + 0.2) {
+                        if (downSel.current) {
+                            setSel(downSel.current.sel);
+                            setEditingId(downSel.current.editing);
+                        }
+                        listen(t);
+                    }
+                }}
                 ref={canvas}
             />
+            <div className={styles.listen}>
+                <Button
+                    leftSection={
+                        <Icon icon={playing && listening.current ? 'mediaPause' : 'mediaPlay'} />
+                    }
+                    onClick={() => (playing && listening.current ? stopPreview() : listen(head))}
+                    size="compact-sm"
+                    variant="default"
+                >
+                    {playing && listening.current ? 'Pause' : `Listen from ${formatClock(head)}`}
+                </Button>
+                <Slider
+                    aria-label="Where to listen from"
+                    className={styles.scrub}
+                    label={(v) => formatClock(v)}
+                    max={dur}
+                    min={0}
+                    onChange={setHead}
+                    onChangeEnd={(v) => (playing && listening.current ? listen(v) : setHead(v))}
+                    step={0.1}
+                    value={head}
+                />
+                <Button onClick={markStart} size="compact-sm" title="[" variant="default">
+                    Start here
+                </Button>
+                <Button onClick={markEnd} size="compact-sm" title="]" variant="default">
+                    End here
+                </Button>
+            </div>
             <div className={styles.row}>
                 <span className={styles.nudge}>
                     <Text isMuted size="sm">

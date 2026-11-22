@@ -11,6 +11,7 @@ import { keyName } from '/@/renderer/features/best-parts/engine/engine';
 import {
     mixElapsed,
     playMixById,
+    playParts,
     skipMixPart,
     stopMix,
     toggleMixPause,
@@ -24,11 +25,15 @@ import { coverUrl, formatClock } from '/@/renderer/features/best-parts/utils';
 import { ContextMenuController } from '/@/renderer/features/context-menu/context-menu-controller';
 import { useCovers } from '/@/renderer/features/covers/covers.store';
 import { useAuthStore } from '/@/renderer/store/auth.store';
+import { usePlayerStoreBase } from '/@/renderer/store/player.store';
 import { ActionIcon } from '/@/shared/components/action-icon/action-icon';
+import { DropdownMenu } from '/@/shared/components/dropdown-menu/dropdown-menu';
+import { Icon } from '/@/shared/components/icon/icon';
 import { Select } from '/@/shared/components/select/select';
 import { Text } from '/@/shared/components/text/text';
 import { toast } from '/@/shared/components/toast/toast';
 import { LibraryItem, type Song } from '/@/shared/types/domain-types';
+import { Play } from '/@/shared/types/types';
 
 // Enough of a Song for the editor; it only reads these fields.
 const songOf = (p: BestPart) =>
@@ -76,6 +81,79 @@ export const SongMenuButton = ({ songId, title }: { songId: string; title: strin
         variant="subtle"
     />
 );
+
+// BolBeats: play the whole song in the main player (from a best part's menu)
+export const playFullSong = async (songId: string) => {
+    const serverId = useAuthStore.getState().currentServer?.id;
+    if (!serverId) return;
+    const song = await api.controller
+        .getSongDetail({ apiClientProps: { serverId }, query: { id: songId } })
+        .catch(() => null);
+    if (!song) return void toast.error({ message: 'This song isn’t in your library any more.' });
+    stopMix();
+    usePlayerStoreBase.getState().addToQueueByType([song], Play.NOW);
+};
+
+// BolBeats: one menu for a song's best parts on the Best parts page; right-clicking the row opens the same menu
+export const SongPartsMenu = ({
+    onOpenChange,
+    opened,
+    parts,
+}: {
+    onOpenChange: (open: boolean) => void;
+    opened: boolean;
+    parts: BestPart[];
+}) => {
+    const first = parts[0];
+    const remove = () => {
+        for (const p of parts) useBestPartsStore.getState().deletePart(p.id);
+        toast.info({ message: `The best parts of ${first.title} are gone from your Best parts.` });
+    };
+    return (
+        <DropdownMenu onChange={onOpenChange} opened={opened} position="bottom-end">
+            <DropdownMenu.Target>
+                <ActionIcon
+                    aria-label={`More for ${first.title}`}
+                    icon="ellipsisHorizontal"
+                    tooltip={{ label: 'More' }}
+                    variant="subtle"
+                />
+            </DropdownMenu.Target>
+            <DropdownMenu.Dropdown>
+                <DropdownMenu.Item
+                    leftSection={<Icon icon="mediaPlay" />}
+                    onClick={() =>
+                        playParts(parts, {}, { label: `${first.title}, best parts`, mixId: null })
+                    }
+                >
+                    Play {parts.length > 1 ? 'these parts' : 'this part'}
+                </DropdownMenu.Item>
+                <DropdownMenu.Item
+                    leftSection={<Icon icon="mediaPlay" />}
+                    onClick={() => playFullSong(first.songId)}
+                >
+                    Play the full song
+                </DropdownMenu.Item>
+                <DropdownMenu.Item
+                    leftSection={<Icon icon="edit" />}
+                    onClick={() => openPartEditor(first)}
+                >
+                    Edit best parts…
+                </DropdownMenu.Item>
+                <DropdownMenu.Item
+                    leftSection={<Icon icon="ellipsisHorizontal" />}
+                    onClick={(e) => openSongMenu(first.songId, e)}
+                >
+                    Song options (queue, playlists, details…)
+                </DropdownMenu.Item>
+                <DropdownMenu.Divider />
+                <DropdownMenu.Item isDanger leftSection={<Icon icon="delete" />} onClick={remove}>
+                    Remove {parts.length > 1 ? 'these parts' : 'this part'}
+                </DropdownMenu.Item>
+            </DropdownMenu.Dropdown>
+        </DropdownMenu>
+    );
+};
 
 const hue = (s: string) => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 360, 7);
 
@@ -195,10 +273,8 @@ const MixProgress = ({ e }: { e: number }) => {
         <div className={styles.mixProgress}>
             <span>{formatClock(e)}</span>
             <span className={styles.progress}>
+                {/* BolBeats: one solid line (join ticks made it read as dashed; the playlist page shows the joins) */}
                 <span style={{ width: `${s.total ? (e / s.total) * 100 : 0}%` }} />
-                {s.seams.map((x, i) => (
-                    <b key={i} style={{ left: `${(x / s.total) * 100}%` }} />
-                ))}
             </span>
             <span>{formatClock(s.total)}</span>
         </div>
@@ -206,7 +282,7 @@ const MixProgress = ({ e }: { e: number }) => {
 };
 
 // BolBeats: while a best-parts playlist plays, the app's player bar shows it (one player, not two): the part playing,
-// previous / play-pause / next part / stop, and the mix's timeline with a tick at every join.
+// previous / play-pause / next part / stop, and the mix's progress as one solid line.
 export const MixBarNow = () => {
     const s = useMixPlayer();
     const parts = useBestPartsStore((st) => st.parts);

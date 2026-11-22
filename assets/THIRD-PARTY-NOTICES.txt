@@ -1,0 +1,21 @@
+BolBeats is free software under the GNU General Public License, version 3 (GPL-3.0).
+Source code: https://github.com/itsrocksome/bolbeats
+
+BolBeats includes or is built on:
+
+- Feishin (GPL-3.0), the music player BolBeats is a modified version of.
+  Source: https://github.com/jeffvli/feishin
+  BolBeats' changes are marked "BolBeats:" in the source and listed in the BolBeats repository.
+
+- Navidrome 0.64.2 (GPL-3.0), included unmodified as the music library (Contents/Resources/navidrome).
+  Source for this exact version: https://github.com/navidrome/navidrome/tree/v0.64.2
+  Release it was taken from: https://github.com/navidrome/navidrome/releases/tag/v0.64.2
+
+- Electron (MIT) and Chromium (various open-source licences; see LICENSES.chromium.html next to this file's folder).
+
+- Fonts: Bricolage Grotesque, Instrument Sans and Inter (SIL Open Font License 1.1).
+
+Online lookups (only when you use them): iTunes Search API (Apple), MusicBrainz and the Cover Art Archive. BolBeats
+sends them song and artist names only. Store previews play only next to a link to the store, as Apple asks.
+
+The full GPL-3.0 text is in the LICENSE file of the source repository and at https://www.gnu.org/licenses/gpl-3.0.html

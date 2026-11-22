@@ -1,5 +1,28 @@
 # Changelog
 
+## 1.5.0
+
+- Media keys, the menu bar and the Dock menu now control a playing best-parts playlist (they used to resume the last
+  regular song instead), and next and previous work in every best-parts run: Made for you, Tune your own, a song's
+  parts and Auto DJ, not only saved playlists.
+- Previous works the usual way everywhere: more than 3 seconds into a song or part it starts it again, otherwise it goes
+  back one; on the first song or part it starts it again instead of doing nothing.
+- Smoother joins for songs full of vocals and rap: overlapping transitions swap the vocal range, so two songs' words
+  don't talk over each other.
+- More complete best parts: a part no longer stops or starts in the middle of a sung or rapped line. Your parts are
+  checked once in the background for this.
+- Update a best-parts playlist when its songs get new or longer parts, without making it again: the playlist page offers
+  Update playlist, and its menu has Update with new parts. Your order, name and cover stay.
+- Auto DJ explains what it does, prefers songs from the same folder, and keeps a best-parts playlist going with more
+  best parts that fit when it ends.
+- The part editor lets you listen first: click the song or drag the listen bar to hear it from anywhere, then press Start
+  here and End here (or [ and ]).
+- One menu: right-clicking a part or song on the Best parts pages opens the same ⋯ menu, which now also has Play the
+  full song, Edit best parts and Remove.
+- The best-parts progress bar is one solid line.
+- The app now ships a third-party notices file with the source location of the bundled Navidrome, and identifies itself
+  to MusicBrainz with the project page.
+
 ## 1.4.0
 
 - BolBeats learns your taste in best parts. Give the playing part a thumbs up or down from the player bar, skip what

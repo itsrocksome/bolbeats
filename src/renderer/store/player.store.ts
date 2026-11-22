@@ -1450,8 +1450,10 @@ export const usePlayerStoreBase = createWithEqualityFn<PlayerState>()(
                     const currentTimestamp = useTimestampStoreBase.getState().timestamp;
                     const isFirstTrack = currentIndex === 0;
 
-                    // If timestamp is greater than 10 seconds, restart current song
-                    if (currentTimestamp > 10) {
+                    // BolBeats: more than 3 seconds in, previous starts the song again (it was 10, which made
+                    // previous at 5 s jump a whole song back), like most players
+                    if (currentTimestamp > 3) {
+                        setTimestampStore(0);
                         eventEmitter.emit('PLAYER_SEEK_TO_TIMESTAMP', { timestamp: 0 });
                         return;
                     }
@@ -1472,6 +1474,13 @@ export const usePlayerStoreBase = createWithEqualityFn<PlayerState>()(
                     } else {
                         // Otherwise, go to previous track
                         previousIndex = Math.max(0, currentIndex - 1);
+                    }
+
+                    // BolBeats: nothing before the first song: start it again (it used to do nothing)
+                    if (previousIndex === currentIndex) {
+                        setTimestampStore(0);
+                        eventEmitter.emit('PLAYER_SEEK_TO_TIMESTAMP', { timestamp: 0 });
+                        return;
                     }
 
                     // Same Chromium Media Session pitfall as mediaNext: a STOPPED→new-src

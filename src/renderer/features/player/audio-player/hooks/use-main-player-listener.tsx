@@ -2,6 +2,7 @@ import { t } from 'i18next';
 import isElectron from 'is-electron';
 import { useCallback, useEffect } from 'react';
 
+import { mixCommand } from '/@/renderer/features/best-parts/mix-remote';
 import { useIsRadioActive, useRadioStore } from '/@/renderer/features/radio/hooks/use-radio-player';
 import { usePlayerActions, useVolumeWheelStep } from '/@/renderer/store';
 import { toast } from '/@/shared/components/toast/toast';
@@ -58,7 +59,9 @@ export const useMainPlayerListener = () => {
             return;
         }
 
+        // BolBeats: a playing best-parts playlist takes the media keys and menu commands first (mix-remote.ts)
         mpvPlayerListener.rendererPlayPause(() => {
+            if (mixCommand('toggle')) return;
             if (!isRadioActive) {
                 mediaTogglePlayPause();
                 return;
@@ -68,6 +71,7 @@ export const useMainPlayerListener = () => {
         });
 
         mpvPlayerListener.rendererNext(() => {
+            if (mixCommand('next')) return;
             if (!isRadioActive) {
                 mediaNext(false);
             }
@@ -80,6 +84,7 @@ export const useMainPlayerListener = () => {
         });
 
         mpvPlayerListener.rendererPrevious(() => {
+            if (mixCommand('previous')) return;
             if (!isRadioActive) {
                 mediaPrevious(false);
             }
@@ -92,6 +97,7 @@ export const useMainPlayerListener = () => {
         });
 
         mpvPlayerListener.rendererPlay(() => {
+            if (mixCommand('play')) return;
             if (!isRadioActive) {
                 mediaPlay();
             } else {
@@ -103,6 +109,7 @@ export const useMainPlayerListener = () => {
         });
 
         mpvPlayerListener.rendererPause(() => {
+            if (mixCommand('pause')) return;
             if (!isRadioActive) {
                 mediaPause();
             } else {
@@ -111,6 +118,7 @@ export const useMainPlayerListener = () => {
         });
 
         mpvPlayerListener.rendererStop(() => {
+            if (mixCommand('stop')) return;
             if (!isRadioActive) {
                 mediaStop({ reset: false });
             } else {

@@ -3,6 +3,7 @@ import { debounce } from 'lodash';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 
 import { getItemImageUrl } from '/@/renderer/components/item-image/item-image';
+import { mixCommand } from '/@/renderer/features/best-parts/mix-remote';
 import { usePlayerEvents } from '/@/renderer/features/player/audio-player/hooks/use-player-events';
 import { usePlayer } from '/@/renderer/features/player/context/player-context';
 import {
@@ -95,7 +96,9 @@ export const useMediaSession = () => {
             return;
         }
 
+        // BolBeats: a playing best-parts playlist takes these first (mix-remote.ts)
         mediaSession.setActionHandler('nexttrack', () => {
+            if (mixCommand('next')) return;
             if (isRadioActiveRef.current && isRadioPlayingRef.current) {
                 return;
             }
@@ -104,14 +107,17 @@ export const useMediaSession = () => {
         });
 
         mediaSession.setActionHandler('pause', () => {
+            if (mixCommand('pause')) return;
             playerRef.current.mediaPause();
         });
 
         mediaSession.setActionHandler('play', () => {
+            if (mixCommand('play')) return;
             playerRef.current.mediaPlay();
         });
 
         mediaSession.setActionHandler('previoustrack', () => {
+            if (mixCommand('previous')) return;
             if (isRadioActiveRef.current && isRadioPlayingRef.current) {
                 return;
             }
@@ -133,6 +139,7 @@ export const useMediaSession = () => {
         });
 
         mediaSession.setActionHandler('stop', () => {
+            if (mixCommand('stop')) return;
             playerRef.current.mediaStop();
         });
 

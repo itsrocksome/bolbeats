@@ -101,3 +101,15 @@
     font-variant-numeric: tabular-nums;
     color: var(--theme-colors-primary);
 }
+
+/* BolBeats: listen first, then mark */
+.listen {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--theme-spacing-sm);
+    align-items: center;
+}
+
+.scrub {
+    flex: 1 1 200px;
+}

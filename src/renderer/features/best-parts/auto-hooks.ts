@@ -58,7 +58,7 @@ const hooksOf = async (song: Song): Promise<BestPart[]> => {
 };
 
 // Songs already checked for every best part by this finder (parts made before 1.1 came one per song).
-const SCANNED = 'hookline_scanned_v3'; // v3: parts of 25 s or more (1.3.0), every song is checked once more
+const SCANNED = 'hookline_scanned_v4'; // v4: parts end after their last words (1.5.0); every song is checked once more
 const scannedSongs = (): Record<string, 1> => {
     try {
         return JSON.parse(localStorage.getItem(SCANNED) ?? '{}');
@@ -88,8 +88,15 @@ export const addMoreParts = async (song: Song) => {
     // the find instead, so everything you picked stays in it; parts you made or edited (auto: false) are left alone.
     const longer = new Map<string, BestPart>();
     for (const h of have) {
-        if (h.auto === false || h.end - h.start >= 24.5) continue;
-        const f = found.find((x) => overlaps(h, x) && x.end - x.start > h.end - h.start);
+        if (h.auto === false) continue;
+        // a short part, or one whose last words the new find lets finish (it runs up to 3 s past the old end)
+        const tail = (x: BestPart) =>
+            Math.abs(x.start - h.start) < 3 && x.end > h.end + 0.3 && x.end - h.end <= 3;
+        const f = found.find(
+            (x) =>
+                overlaps(h, x) &&
+                ((h.end - h.start < 24.5 && x.end - x.start > h.end - h.start) || tail(x)),
+        );
         if (!f) continue;
         if (h.auto) {
             longer.set(h.id, f);
@@ -105,7 +112,7 @@ export const addMoreParts = async (song: Song) => {
             Math.max(h.end, f.end),
             ...others.filter((o) => o.start >= h.end - 0.01).map((o) => o.start),
         );
-        if (end - start <= h.end - h.start + 1) continue;
+        if (end - start <= h.end - h.start + 0.25) continue;
         const buf = await decodeSong(song.id); // just decoded by hooksOf: cached
         longer.set(h.id, { ...f, analysis: analyzeBuffer(slice(buf, start, end)), end, start });
     }
