@@ -9,7 +9,7 @@ import type {
     WriteSongTagsBatchResult,
 } from '../shared/types/tag-editor';
 
-import { disableAutoUpdates, isLinux, isMacOS, isWindows } from '../main/env';
+import { isLinux, isMacOS, isWindows } from '../main/env';
 
 const openItem = async (path: string) => {
     return ipcRenderer.invoke('open-item', path);
@@ -104,10 +104,6 @@ const download = (url: string) => {
     ipcRenderer.send('download-url', url);
 };
 
-const checkForUpdates = (): Promise<{ updateAvailable: boolean; version?: string }> => {
-    return ipcRenderer.invoke('app-check-for-updates');
-};
-
 const startPowerSaveBlocker = (full: boolean) => {
     return ipcRenderer.invoke('power-save-blocker-start', { full });
 };
@@ -162,19 +158,9 @@ const rendererToggleSidebar = (cb: () => void) => {
     ipcRenderer.on('renderer-toggle-sidebar', () => cb());
 };
 
-const rendererOpenReleaseNotes = (cb: () => void) => {
-    ipcRenderer.on('renderer-open-release-notes', () => cb());
-};
-
-const rendererUpdateAvailable = (cb: (version: string) => void) => {
-    ipcRenderer.on('update-available', (_, version) => cb(version));
-};
-
 export const utils = {
     cancelReadSongMetadata,
-    checkForUpdates,
     customCssUpdatedListener,
-    disableAutoUpdates,
     download,
     exportDiagnostics,
     forceGarbageCollection,
@@ -195,11 +181,9 @@ export const utils = {
     rendererOpenCommandPalette,
     rendererOpenCreatePlaylist,
     rendererOpenManageServers,
-    rendererOpenReleaseNotes,
     rendererOpenSettings,
     rendererTogglePrivateMode,
     rendererToggleSidebar,
-    rendererUpdateAvailable,
     saveCustomCss,
     separator: isWindows() ? '\\' : '/',
     setInputFocused,

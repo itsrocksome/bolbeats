@@ -22,7 +22,6 @@ import {
 } from '/@/renderer/features/library-tools/library-songs';
 import { rescanLibrary } from '/@/renderer/features/local-library/connect-local-library';
 import { useAuthStore } from '/@/renderer/store/auth.store';
-import { loadsAsPlaceholder } from '/@/shared/components/image/server-placeholder';
 import { toast } from '/@/shared/components/toast/toast';
 
 export type AutoFix = {
@@ -127,8 +126,14 @@ const addCovers = async (now: AutoFix[]) => {
     for (const song of songs) {
         if (!useAutoDetails.getState().on) break;
         const url = coverUrl(song.id);
-        const placeholder = url ? await loadsAsPlaceholder(url) : false;
-        if (!placeholder) {
+        // the library answers 404 when a song has no cover (embedded or next to the file)
+        const noCover = url
+            ? await fetch(url, { method: 'HEAD' }).then(
+                  (r) => r.status === 404,
+                  () => false,
+              )
+            : false;
+        if (!noCover) {
             useAutoDetails.setState((s) => ({
                 tried: { ...s.tried, [key(song.path!)]: Date.now() + 30 * DAY },
             }));

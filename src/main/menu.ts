@@ -309,34 +309,28 @@ export default class MenuBuilder {
             submenu: [
                 {
                     click() {
-                        shell.openExternal('https://github.com/jeffvli/feishin');
+                        shell.openExternal('https://github.com/itsrocksome/bolbeats');
                     },
                     label: 'Learn More',
                 },
                 {
                     click() {
-                        shell.openExternal(
-                            'https://github.com/jeffvli/feishin?tab=readme-ov-file#getting-started',
-                        );
+                        shell.openExternal('https://github.com/itsrocksome/bolbeats#readme');
                     },
                     label: 'Documentation',
                 },
                 {
                     click() {
-                        shell.openExternal('https://github.com/jeffvli/feishin/discussions');
-                    },
-                    label: 'Community Discussions',
-                },
-                {
-                    click() {
-                        shell.openExternal('https://github.com/jeffvli/feishin/issues');
+                        shell.openExternal('https://github.com/itsrocksome/bolbeats/issues');
                     },
                     label: 'Search Issues',
                 },
                 { type: 'separator' },
                 {
                     click: () => {
-                        this.mainWindow.webContents.send('renderer-open-release-notes');
+                        shell.openExternal(
+                            `https://github.com/itsrocksome/bolbeats/releases/tag/v${packageJson.version}`,
+                        );
                     },
                     label: 'Version ' + packageJson.version,
                 },
@@ -426,27 +420,19 @@ export default class MenuBuilder {
                 submenu: [
                     {
                         click() {
-                            shell.openExternal('https://github.com/jeffvli/feishin');
+                            shell.openExternal('https://github.com/itsrocksome/bolbeats');
                         },
                         label: 'Learn More',
                     },
                     {
                         click() {
-                            shell.openExternal(
-                                'https://github.com/jeffvli/feishin?tab=readme-ov-file#getting-started',
-                            );
+                            shell.openExternal('https://github.com/itsrocksome/bolbeats#readme');
                         },
                         label: 'Documentation',
                     },
                     {
                         click() {
-                            shell.openExternal('https://github.com/jeffvli/feishin/discussions');
-                        },
-                        label: 'Community Discussions',
-                    },
-                    {
-                        click() {
-                            shell.openExternal('https://github.com/jeffvli/feishin/issues');
+                            shell.openExternal('https://github.com/itsrocksome/bolbeats/issues');
                         },
                         label: 'Search Issues',
                     },

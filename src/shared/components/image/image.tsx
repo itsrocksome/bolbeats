@@ -12,7 +12,6 @@ import {
 } from 'react';
 
 import styles from './image.module.css';
-import { isServerPlaceholder } from './server-placeholder';
 import { useNativeImage } from './use-native-image';
 
 import { AppIcon, Icon } from '/@/shared/components/icon/icon';
@@ -94,11 +93,9 @@ export function BaseImage({
         isInSessionCache || !enableDebounce ? rawImageRequest : debouncedImageRequest;
 
     const [hasLoadedInInstance, setHasLoadedInInstance] = useState(false);
-    const [isPlaceholder, setIsPlaceholder] = useState(false); // BolBeats: the server's stand-in picture
 
     useEffect(() => {
         setHasLoadedInInstance(false);
-        setIsPlaceholder(false);
     }, [effectiveImageRequest?.cacheKey]);
 
     const shouldLoadImage = Boolean(
@@ -134,9 +131,7 @@ export function BaseImage({
             isExplicit={isExplicit}
             ref={ref}
         >
-            {isPlaceholder ? (
-                <ImageUnloader className={className} icon={unloaderIcon} />
-            ) : nativeImage.displaySrc ? (
+            {nativeImage.displaySrc ? (
                 <img
                     alt="" // BolBeats: covers sit next to their titles; screen readers skip them unless a caller names one
                     className={clsx(styles.image, className, {
@@ -145,10 +140,7 @@ export function BaseImage({
                     decoding="async"
                     fetchPriority={fetchPriority}
                     onError={onError}
-                    onLoad={(e) => {
-                        if (isServerPlaceholder(e.currentTarget)) setIsPlaceholder(true);
-                        onLoad?.(e);
-                    }}
+                    onLoad={onLoad}
                     src={nativeImage.displaySrc}
                     {...props}
                 />

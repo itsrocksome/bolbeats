@@ -293,7 +293,7 @@ h3,
     mask-image: linear-gradient(to bottom, #000 20%, transparent 100%);
 }
 
-/* ---------- missing artwork: soft glass, not a glaring server placeholder (see server-placeholder.ts) ---------- */
+/* ---------- missing artwork: soft glass ---------- */
 .fs-image-module-unloader {
     color: var(--bb-dim);
     background:

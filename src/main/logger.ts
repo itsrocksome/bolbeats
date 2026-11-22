@@ -209,21 +209,3 @@ ipcMain.handle('logger-export-diagnostics', async (_event, payload?: ExportDiagn
 });
 
 export default log;
-
-export const autoUpdaterLogInterface = {
-    debug: (message: string) => {
-        log.debug(message);
-    },
-
-    error: (message: string) => {
-        log.error(message);
-    },
-
-    info: (message: string) => {
-        log.info(message);
-    },
-
-    warn: (message: string) => {
-        log.warn(message);
-    },
-};

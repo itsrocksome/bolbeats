@@ -8,17 +8,14 @@ import { lift } from '/@/renderer/features/now-playing-glow/lift';
 import { getFastAverageColor } from '/@/renderer/hooks/use-fast-average-color';
 import { useAuthStore } from '/@/renderer/store/auth.store';
 import { subscribeCurrentTrack, usePlayerStoreBase } from '/@/renderer/store/player.store';
-import { loadsAsPlaceholder } from '/@/shared/components/image/server-placeholder';
 
 let shown: null | string = null;
 
 const glowFrom = async (src: null | string) => {
     if (src === shown) return;
     shown = src;
-    // Navidrome's stand-in picture for songs without artwork would paint the whole room its blue; skip it.
-    const real = src && !(await loadsAsPlaceholder(src)) ? src : null;
-    if (shown !== src) return;
-    const measured = real ? await getFastAverageColor({ src: real }).catch(() => null) : null;
+    // a song without artwork has no cover to load (404), so it measures nothing
+    const measured = src ? await getFastAverageColor({ src }).catch(() => null) : null;
     if (shown !== src) return; // a newer cover arrived while this one was measured
     const color = measured && lift(measured);
     const root = document.documentElement.style;

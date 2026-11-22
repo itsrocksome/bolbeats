@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.6.1
+
+- Fix: the cover glow behind Now Playing, and filling in missing covers, could fail for songs whose cover was already
+  on screen (a cover first shown as an image was cached without the permission the glow needs to read it).
+- Fix: filling in missing covers works with the built-in library (it looked for the old library's stand-in picture).
+- Help menu and Version open BolBeats' own GitHub pages; the version no longer fetches release notes from the
+  internet.
+- Smaller and simpler: removed the unused updater, the analytics switch that did nothing, and leftovers from the
+  player BolBeats is built on (web and Docker builds, test channels, Linux installer helpers).
+
 ## 1.6.0
 
 - BolBeats' music library is now built into the app. The separate library server it used to bundle (Navidrome) is gone,

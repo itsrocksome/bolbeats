@@ -1221,14 +1221,13 @@ export const startServer = async (host: LibraryHost, port: number) => {
 
     let actualPort = port;
     const server = http.createServer(async (req, res) => {
-        const origin = req.headers.origin;
-        if (origin) {
-            res.setHeader('Access-Control-Allow-Origin', '*');
-            res.setHeader(
-                'Access-Control-Expose-Headers',
-                'X-Content-Duration, X-Total-Count, X-Nd-Authorization',
-            );
-        }
+        // Always, not only when the request names an origin: covers are cached for a year, and a copy first loaded by
+        // an <img> (no origin) would otherwise later be refused to code that reads its pixels (the cover glow).
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader(
+            'Access-Control-Expose-Headers',
+            'X-Content-Duration, X-Total-Count, X-Nd-Authorization',
+        );
         res.setHeader('X-Content-Type-Options', 'nosniff');
         try {
             // Only this computer, by its own name: a web page that renames itself to 127.0.0.1 gets nothing.

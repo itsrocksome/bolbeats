@@ -3,12 +3,9 @@ import isElectron from 'is-electron';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import packageJson from '../../../package.json';
-
 import { openCreatePlaylistModal } from '/@/renderer/features/playlists/components/create-playlist-form';
 import { ServerList } from '/@/renderer/features/servers/components/server-list';
 import { openSettingsModal } from '/@/renderer/features/settings/utils/open-settings-modal';
-import { openReleaseNotesModal } from '/@/renderer/release-notes-modal';
 import {
     useAppStore,
     useAppStoreActions,
@@ -151,20 +148,4 @@ export const useNativeMenuSync = () => {
 
         ipc?.send('update-sidebar-collapsed', sidebar.collapsed);
     }, [sidebar.collapsed]);
-
-    useEffect(() => {
-        if (!isElectron()) {
-            return undefined;
-        }
-
-        window.api.utils.rendererOpenReleaseNotes(() => {
-            openReleaseNotesModal(
-                t('common.newVersion', { version: packageJson.version }) as string,
-            );
-        });
-
-        return () => {
-            ipc?.removeAllListeners('renderer-open-release-notes');
-        };
-    }, [t]);
 };

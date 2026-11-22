@@ -1,6 +1,4 @@
 // BolBeats fork: never auto-update to upstream Feishin builds.
-export const disableAutoUpdates = () => true;
-
 export const isMacOS = () => {
     return process.platform === 'darwin';
 };
