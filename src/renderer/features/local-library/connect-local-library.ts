@@ -48,9 +48,7 @@ const signIn = async (info: LocalLibraryInfo) => {
 };
 
 export const connectLocalLibrary = async () => {
-    const info = await signIn(await window.api.localLibrary.start());
-    if (info.fullScan) rescanLibrary(true); // new tag settings: reread every file once (in the background)
-    return info;
+    return signIn(await window.api.localLibrary.start());
 };
 
 const subsonic = async (endpoint: string, extra = '') => {
@@ -87,7 +85,7 @@ export const changeMusicFolder = async (testPath?: string) => {
     return true;
 };
 
-// Navidrome's file watcher picks up songs dropped straight into the music folder by itself (about 5 s later).
+// The library's folder watcher picks up songs dropped straight into the music folder by itself (a moment later).
 // This notices when it has, refreshes every list and says how many arrived. Local requests only, every 10 s.
 let lastScan = '';
 let lastCount = -1;

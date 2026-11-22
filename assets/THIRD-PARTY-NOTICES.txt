@@ -7,9 +7,11 @@ BolBeats includes or is built on:
   Source: https://github.com/jeffvli/feishin
   BolBeats' changes are marked "BolBeats:" in the source and listed in the BolBeats repository.
 
-- Navidrome 0.64.2 (GPL-3.0), included unmodified as the music library (Contents/Resources/navidrome).
-  Source for this exact version: https://github.com/navidrome/navidrome/tree/v0.64.2
-  Release it was taken from: https://github.com/navidrome/navidrome/releases/tag/v0.64.2
+- TagLib (LGPL-2.1 or MPL-1.1), through taglib-wasm (MIT), reads song tags and covers for the music library and the
+  tag editor. Source: https://github.com/taglib/taglib and https://github.com/CharlesWiltgen/taglib-wasm
+
+- Earlier versions (1.0 to 1.5) bundled Navidrome (GPL-3.0) as the music library. BolBeats' own library replaced it and
+  contains none of its code; on the first launch it reads Navidrome's database once to keep your ids, plays and playlists.
 
 - Electron (MIT) and Chromium (various open-source licences; see LICENSES.chromium.html next to this file's folder).
 

@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.6.0
+
+- BolBeats' music library is now built into the app. The separate library server it used to bundle (Navidrome) is gone,
+  so the app is about 66 MB smaller, starts faster and runs nothing in the background. The first launch moves
+  everything over by itself: every song keeps its id, so your best parts, playlists, play counts, favourites, ratings
+  and play queue all stay as they were.
+- Move or rename a song in Finder and it keeps its best parts and plays (it used to become a new song).
+- New, changed and deleted songs show up a moment after you add them to the music folder.
+- An artist without a photo shows their album cover instead of a blank placeholder, and "recently added" no longer
+  reshuffles when files are copied to a new disk.
+- Similar songs and artist radio now work offline, from your own library (same artists, then genre, then folder).
+- Lyrics saved in your song files show up, synced when they have time stamps.
+- BolBeats now shows in Control Centre's Now Playing and answers the Mac keyboard's play/pause, next and previous keys
+  without asking for Accessibility permission, for songs and best-parts playlists alike. Now Playing shows the playing
+  part and how far into the playlist you are.
+- The last few places that still said Feishin now say BolBeats.
+
 ## 1.5.0
 
 - Media keys, the menu bar and the Dock menu now control a playing best-parts playlist (they used to resume the last

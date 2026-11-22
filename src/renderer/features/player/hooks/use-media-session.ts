@@ -3,7 +3,7 @@ import { debounce } from 'lodash';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 
 import { getItemImageUrl } from '/@/renderer/components/item-image/item-image';
-import { mixCommand } from '/@/renderer/features/best-parts/mix-remote';
+import { mixActive, mixCommand } from '/@/renderer/features/best-parts/mix-remote';
 import { usePlayerEvents } from '/@/renderer/features/player/audio-player/hooks/use-player-events';
 import { usePlayer } from '/@/renderer/features/player/context/player-context';
 import {
@@ -126,6 +126,7 @@ export const useMediaSession = () => {
         });
 
         mediaSession.setActionHandler('seekto', (e) => {
+            if (mixActive()) return; // BolBeats: a best-parts playlist has no seek
             if (isRadioActiveRef.current && isRadioPlayingRef.current) {
                 return;
             }
@@ -144,6 +145,7 @@ export const useMediaSession = () => {
         });
 
         mediaSession.setActionHandler('seekbackward', (e) => {
+            if (mixActive()) return; // BolBeats: a best-parts playlist has no seek
             if (isRadioActiveRef.current && isRadioPlayingRef.current) {
                 return;
             }
@@ -155,6 +157,7 @@ export const useMediaSession = () => {
         });
 
         mediaSession.setActionHandler('seekforward', (e) => {
+            if (mixActive()) return; // BolBeats: a best-parts playlist has no seek
             if (isRadioActiveRef.current && isRadioPlayingRef.current) {
                 return;
             }

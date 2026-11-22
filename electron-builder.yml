@@ -17,9 +17,6 @@ electronLanguages:
     - hi
 extraResources:
     - assets/**
-    # BolBeats: the private on-device library server
-    - from: resources/navidrome
-      to: navidrome
 asarUnpack:
     - resources/**
 win:

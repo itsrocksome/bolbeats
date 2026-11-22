@@ -82,13 +82,14 @@ fine) or pick any folder in **Your library**.
 
 ## Private by design
 - No account, no analytics, no ads, no auto-updates.
-- Your music never leaves your Mac. BolBeats runs its own music library ([Navidrome](https://www.navidrome.org)) on
-  `127.0.0.1` only, with its online features turned off.
+- Your music never leaves your Mac. BolBeats' music library is built in: it reads your music folder and answers only
+  this Mac, on `127.0.0.1`, behind a login only the app knows.
 - The only online requests are optional song-detail lookups (song title and artist) and release checks for your artists.
 
 ## How it works
-- **Library.** BolBeats bundles Navidrome and points it at your music folder, so every song is searchable and folders,
-  playlists and artists stay in sync.
+- **Library.** BolBeats reads your music folder itself (tags and covers through TagLib), keeps a small index next to
+  its settings, and notices new, changed, moved or deleted songs on its own. A song you move or rename keeps its best
+  parts and plays.
 - **Finding the hook.** Each song is turned into a timeline of harmony (chroma) and sound colour (MFCC) features. A
   self-similarity map shows which moments repeat (mutual nearest neighbours), a novelty curve shows where sections change,
   and beat tracking places the cut. It runs off the main thread, two songs at a time.
@@ -121,7 +122,6 @@ You need Node.js 24 or later, [pnpm](https://pnpm.io) and, for the audio tests, 
 git clone https://github.com/itsrocksome/bolbeats.git
 cd bolbeats
 pnpm install
-node scripts/get-navidrome.mjs   # downloads and checks the bundled library server
 pnpm run dev
 ```
 
@@ -136,9 +136,9 @@ Checks: `pnpm run lint` (types, code and styles) and `node --test test/*.test.ts
 
 ## Credits
 - [Feishin](https://github.com/jeffvli/feishin) by jeffvli and contributors, the player BolBeats is built on (GPL-3.0).
-- [Navidrome](https://github.com/navidrome/navidrome) 0.64.2, bundled unmodified as the music library (GPL-3.0); source for
-  that exact version: [v0.64.2](https://github.com/navidrome/navidrome/tree/v0.64.2). `scripts/get-navidrome.mjs` fetches
-  the same release and checks its checksum.
+- [TagLib](https://github.com/taglib/taglib) through [taglib-wasm](https://github.com/CharlesWiltgen/taglib-wasm), which
+  reads tags and covers. Versions 1.0 to 1.5 bundled [Navidrome](https://github.com/navidrome/navidrome) (GPL-3.0) as the
+  library; BolBeats' own library replaced it and speaks the same API, so the app's screens did not change.
 - Fonts: [Bricolage Grotesque](https://fonts.google.com/specimen/Bricolage+Grotesque) and
   [Instrument Sans](https://fonts.google.com/specimen/Instrument+Sans) (SIL Open Font License).
 - Song details from [iTunes Search](https://performance-partners.apple.com/search-api), [MusicBrainz](https://musicbrainz.org)

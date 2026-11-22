@@ -510,7 +510,7 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-const wav = (b: AudioBuffer) => {
+export const wav = (b: AudioBuffer) => {
     const ch = b.numberOfChannels;
     const n = b.length;
     const out = new DataView(new ArrayBuffer(44 + n * ch * 2));

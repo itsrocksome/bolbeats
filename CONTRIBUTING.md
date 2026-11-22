@@ -9,7 +9,6 @@ You need Node.js 24 or later, pnpm and ffmpeg (for the audio tests).
 
 ```bash
 pnpm install
-node scripts/get-navidrome.mjs
 pnpm run dev
 ```
 

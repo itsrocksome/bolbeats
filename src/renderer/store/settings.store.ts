@@ -1503,7 +1503,7 @@ const initialState: SettingsState = {
             zoomIn: { allowGlobal: true, hotkey: '', isGlobal: false },
             zoomOut: { allowGlobal: true, hotkey: '', isGlobal: false },
         },
-        globalMediaHotkeys: true,
+        globalMediaHotkeys: Boolean(utils?.isLinux()),
     },
     lists: {
         ['albumDetail']: {
@@ -2124,7 +2124,7 @@ const initialState: SettingsState = {
             preamp: 0,
         },
         filters: [],
-        mediaSession: false,
+        mediaSession: !utils?.isLinux(),
         mpvAudioDeviceId: undefined,
         mpvExtraParameters: [],
         mpvProperties: {
@@ -3057,10 +3057,16 @@ export const useSettingsStore = createWithEqualityFn<SettingsSlice>()(
                 // BolBeats: the "⋯" options button on every song row.
                 if (version < 41) enableRowActions(state.lists);
 
+                // BolBeats: media session on (Now Playing + media keys), matching the main-process settings.
+                if (version < 42 && !utils?.isLinux()) {
+                    state.playback.mediaSession = true;
+                    state.hotkeys.globalMediaHotkeys = false;
+                }
+
                 return persistedState;
             },
             name: 'store_settings',
-            version: 41,
+            version: 42,
         },
     ),
 );

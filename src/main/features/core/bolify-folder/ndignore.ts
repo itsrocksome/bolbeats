@@ -1,6 +1,6 @@
 // BolBeats: hides second copies of a song from the library through <music folder>/.ndignore, the library's own
 // "skip these files" list. Only BolBeats' block is ever changed; lines you add yourself stay. Pure, so tests load it.
-// Navidrome turns each line into a regular expression after escaping "." and "?" itself ("*" stays a wildcard), so
+// The library (local-library/model.ts ignoreMatcher) reads each line as a path pattern ("*" stays a wildcard), so
 // other regex characters are escaped here; a leading "/" ties the line to the top of the music folder.
 // An .ndignore with no patterns at all hides EVERYTHING, so a file that would be left without any is deleted instead.
 import type { HiddenCopy } from '/@/shared/types/bolify-folder';

@@ -109,9 +109,10 @@ export const store = new Store<any>({
     defaults: {
         disable_auto_updates: false,
         enableNeteaseTranslation: false,
-        global_media_hotkeys: true,
+        // BolBeats: the media session drives Now Playing and the media keys on macOS/Windows (no Accessibility prompt)
+        global_media_hotkeys: process.platform === 'linux',
         lyrics: ['NetEase', 'lrclib.net'],
-        mediaSession: false,
+        mediaSession: process.platform !== 'linux',
         playbackType: 'web',
         should_prompt_accessibility: true,
         shown_accessibility_warning: false,
@@ -131,6 +132,11 @@ export const store = new Store<any>({
         },
     },
 });
+
+// BolBeats: Feishin shipped the media session off, which hid BolBeats from Now Playing; turn it on once for old configs
+if (process.platform !== 'linux' && !store.get('bolbeats_media_session_on')) {
+    store.set({ bolbeats_media_session_on: true, global_media_hotkeys: false, mediaSession: true });
+}
 
 ipcMain.handle('settings-get', (_event, data: { property: string }) => {
     return store.get(`${data.property}`);

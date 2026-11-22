@@ -2,10 +2,12 @@
 // is on (it plays outside the main player, so they used to resume the last regular song instead). Side-effect import in
 // app.tsx; the key and menu listeners (use-main-player-listener, use-media-session) ask `mixCommand` first.
 import {
+    mixElapsed,
     skipMixPart,
     stopMix,
     toggleMixPause,
     useMixPlayer,
+    wav,
 } from '/@/renderer/features/best-parts/mix-player';
 import { useBestPartsStore } from '/@/renderer/features/best-parts/store/best-parts.store';
 import { usePlayerStoreBase } from '/@/renderer/store/player.store';
@@ -34,13 +36,33 @@ export const mixCommand = (cmd: MixCommand): boolean => {
     return true;
 };
 
+// Web Audio alone never shows in macOS Now Playing (Chromium lists only <audio>/<video>, and only ones over 5 s), so a
+// silent 10 s loop plays while a best-parts playlist does.
+let standIn: HTMLAudioElement | null = null;
+const holdNowPlaying = (on: boolean) => {
+    if (!on) return standIn?.pause();
+    if (!standIn) {
+        standIn = new Audio(
+            URL.createObjectURL(wav(new AudioBuffer({ length: 80000, sampleRate: 8000 }))),
+        );
+        standIn.loop = true;
+    }
+    standIn.play().catch(() => {});
+};
+
 // Menus show Play or Pause from this, and Now Playing shows the playing part.
 const report = () => {
     const s = useMixPlayer.getState();
     const api = (window as any).api?.mpris;
     if (s.preview) return;
+    holdNowPlaying(s.status === 'playing' || s.status === 'loading');
     if (s.status === 'idle') {
         api?.updateStatus?.(usePlayerStoreBase.getState().player.status);
+        try {
+            navigator.mediaSession?.setPositionState?.();
+        } catch {
+            // nothing set
+        }
         return;
     }
     api?.updateStatus?.(s.status === 'paused' ? PlayerStatus.PAUSED : PlayerStatus.PLAYING);
@@ -53,6 +75,13 @@ const report = () => {
             title: part.title,
         });
         navigator.mediaSession.playbackState = s.status === 'paused' ? 'paused' : 'playing';
+        // the playlist's own clock, not the silent loop's
+        if (s.total > 0)
+            navigator.mediaSession.setPositionState?.({
+                duration: s.total,
+                playbackRate: 1,
+                position: Math.min(s.total, mixElapsed()),
+            });
     }
 };
 useMixPlayer.subscribe((s, prev) => {

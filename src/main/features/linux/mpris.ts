@@ -8,7 +8,7 @@ import { PlayerRepeat, PlayerStatus } from '/@/shared/types/types';
 
 const mprisPlayer = Player({
     desktopEntry: 'org.jeffvli.feishin',
-    identity: 'Feishin',
+    identity: 'BolBeats',
     maximumRate: 1.0,
     minimumRate: 1.0,
     name: 'Feishin',
