@@ -459,7 +459,7 @@ const MixRoute = () => {
                         <div className={styles.listHead}>
                             <Text isMuted size="sm">
                                 {parts.length > 1
-                                    ? 'Drag to reorder. Click a number to play from there.'
+                                    ? 'Drag to reorder. Double-click a part (or click its number) to play from there.'
                                     : 'Add at least two parts to hear the joins.'}
                             </Text>
                             {!isAll && (
@@ -503,6 +503,12 @@ const MixRoute = () => {
                                                 e.preventDefault();
                                                 setMenuFor(p.id);
                                             }}
+                                            // BolBeats: double-click a part to play the playlist from it (its buttons do their own thing)
+                                            onDoubleClick={(e) =>
+                                                !(e.target as HTMLElement).closest(
+                                                    'button, a, input',
+                                                ) && playFrom(i)
+                                            }
                                         >
                                             <button
                                                 aria-label={`Play from ${p.title}`}

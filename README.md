@@ -112,7 +112,8 @@ on your Mac.
 
 **Is it free?** Yes, free and open source under the GPL-3.0 licence.
 
-**Windows or Linux?** BolBeats is built and tested on macOS only for now.
+**Windows or Linux?** There is a first Windows build (64-bit Windows 10 and 11). It is newer and less tested than the Mac
+version, so please report anything odd. Linux: build from source.
 
 ## Build from source
 

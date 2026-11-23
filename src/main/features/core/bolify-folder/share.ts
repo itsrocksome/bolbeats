@@ -72,11 +72,17 @@ const deliver = (content: string) => {
     if (win && !win.webContents.isLoading()) win.webContents.send('bolify-mix-opened', content);
     else waiting.push(content);
 };
-app.on('open-file', (e, file) => {
-    if (path.extname(file).toLowerCase() !== `.${EXT}`) return;
-    e.preventDefault();
+const isShared = (file: string) => path.extname(file).toLowerCase() === `.${EXT}`;
+const openShared = (file: string) =>
     readShared(file)
         .then((content) => content && deliver(content))
         .catch((err) => log.warn('[share] could not read a shared playlist', { err: String(err) }));
+app.on('open-file', (e, file) => {
+    if (!isShared(file)) return;
+    e.preventDefault();
+    openShared(file);
 });
+// Windows and Linux hand a double-clicked file over as an argument: to this launch, or to the copy already running.
+process.argv.slice(1).filter(isShared).forEach(openShared);
+app.on('second-instance', (_e, argv) => argv.filter(isShared).forEach(openShared));
 ipcMain.handle('bolify-mix-waiting', () => waiting.splice(0));

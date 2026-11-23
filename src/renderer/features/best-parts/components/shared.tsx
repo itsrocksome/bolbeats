@@ -12,6 +12,8 @@ import {
     mixElapsed,
     playMixById,
     playParts,
+    playRunFrom,
+    runParts,
     skipMixPart,
     stopMix,
     toggleMixPause,
@@ -337,6 +339,7 @@ export const MixBarControls = () => {
                     tooltip={{ label: 'Next part' }}
                     variant="subtle"
                 />
+                <MixPartsMenu />
                 <ActionIcon
                     icon="mediaStop"
                     onClick={stopMix}
@@ -347,6 +350,67 @@ export const MixBarControls = () => {
             </div>
             <MixProgress e={e} />
         </div>
+    );
+};
+
+// BolBeats: every part of the playing run; pick one to play from there (no pressing next ten times).
+const MixPartsMenu = () => {
+    const s = useMixPlayer();
+    const [opened, setOpened] = useState(false);
+    // opens on the part that is playing, not at the top of a long list
+    useEffect(() => {
+        if (!opened) return;
+        const t = setTimeout(() =>
+            document
+                .querySelector('[role="menuitem"][aria-current="true"]')
+                ?.scrollIntoView({ block: 'center' }),
+        );
+        return () => clearTimeout(t);
+    }, [opened]);
+    if (s.preview || s.status === 'idle') return null;
+    const playingId = s.partIds[s.index];
+    const list = opened ? runParts() : [];
+    return (
+        <DropdownMenu onChange={setOpened} opened={opened} position="top" width={360}>
+            <DropdownMenu.Target>
+                <ActionIcon
+                    aria-label="All parts in this playlist"
+                    disabled={s.status === 'loading'}
+                    icon="queue"
+                    tooltip={{ label: 'Pick a part' }}
+                    variant="subtle"
+                />
+            </DropdownMenu.Target>
+            <DropdownMenu.Dropdown style={{ maxHeight: 420, overflowY: 'auto' }}>
+                {list.map(({ at, part }) => (
+                    <DropdownMenu.Item
+                        aria-current={part.id === playingId ? 'true' : undefined}
+                        key={`${at}:${part.id}`}
+                        leftSection={
+                            part.id === playingId ? (
+                                <Icon icon="mediaPlay" />
+                            ) : (
+                                <Text isMuted size="sm">
+                                    {at + 1}
+                                </Text>
+                            )
+                        }
+                        onClick={() => playRunFrom(at)}
+                        py={6}
+                    >
+                        <Text
+                            component="span"
+                            fw={part.id === playingId ? 700 : 400}
+                            size="sm"
+                            truncate
+                        >
+                            {part.title}
+                            {part.artist ? ` · ${part.artist}` : ''}
+                        </Text>
+                    </DropdownMenu.Item>
+                ))}
+            </DropdownMenu.Dropdown>
+        </DropdownMenu>
     );
 };
 

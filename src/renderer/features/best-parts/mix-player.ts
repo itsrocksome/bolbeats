@@ -336,6 +336,10 @@ export const playParts = async (
         return;
     }
     if (ok.length < use.length) {
+        // the run's list drops them too, so part numbers and picking a part stay in step with what plays
+        const gone = new Set(use.filter((_, i) => !('b' in got[i])).map((p) => p.id));
+        if (run && opts.preview == null)
+            run = { ...run, parts: run.parts.filter((p) => !gone.has(p.id)) };
         const n = use.length - ok.length;
         toast.warn({
             message: `Left out ${n} part${n > 1 ? 's' : ''} whose song couldn’t be loaded.`,
@@ -455,6 +459,8 @@ export const playMixById = (mixId: string, from = 0, dir: -1 | 1 = 1) => {
     let at =
         dir > 0 ? list.findIndex(([, i]) => i >= from) : list.findLastIndex(([, i]) => i <= from);
     if (at < 0) at = dir > 0 ? list.length - 1 : 0;
+    // the whole list being played, so next / previous / pick a part count in the same list
+    run = { label: mix.name, parts: list.map(([p]) => p), picks: mix.picks };
     playParts(
         list.slice(at).map(([p]) => p),
         mix.picks,
@@ -473,11 +479,11 @@ export const skipMixPart = (d: -1 | 1) => {
     const part = useBestPartsStore.getState().parts[s.partIds[s.index]];
     const into = mixElapsed() - (s.at[s.index] ?? 0);
     let step: -1 | 0 | 1 = d < 0 && into > 3 ? 0 : d;
-    const ids = s.mixId
-        ? (useBestPartsStore.getState().mixes[s.mixId]?.partIds ?? [])
-        : (run?.parts.map((p) => p.id) ?? []);
-    const here = s.mixId ? ids.indexOf(s.partIds[s.index]) : s.offset + s.index;
-    if (here < 0) return;
+    // BolBeats: always the list that is playing (a saved playlist used to be looked up by id, so "Play all", which
+    // has no saved list, ignored next and previous)
+    const ids = run?.parts ?? [];
+    const here = s.offset + s.index;
+    if (!ids.length) return;
     if (here + step < 0) step = 0;
     // moving on before a part's halfway point teaches BolBeats you'd rather not hear it
     if (d > 0 && part && into < (part.end - part.start) / 2) skippedPart(part.id);
@@ -487,10 +493,21 @@ export const skipMixPart = (d: -1 | 1) => {
             ? void playParts(more, {}, { label: 'Auto DJ', mixId: null })
             : stopMix();
     }
-    if (s.mixId) return void playMixById(s.mixId, here + step, step < 0 ? -1 : 1);
+    playRunFrom(here + step);
+};
+
+// BolBeats: every part of the playing run (a saved playlist or not), with its place in it, so any one can be picked.
+export const runParts = (): { at: number; part: BestPart }[] =>
+    (run?.parts ?? []).map((part, at) => ({ at, part }));
+
+// Plays the playing run from part `at` on (a place from runParts), like next / previous but any distance.
+export const playRunFrom = (at: number) => {
     if (!run) return;
-    const at = here + step;
-    void playParts(run.parts.slice(at), run.picks, { label: run.label, mixId: null, offset: at });
+    void playParts(run.parts.slice(at), run.picks, {
+        label: run.label,
+        mixId: useMixPlayer.getState().mixId, // keeps its playlist page showing what plays
+        offset: at,
+    });
 };
 
 const typing = (e: KeyboardEvent) =>

@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.6.2
+
+- Pick any part while best parts play: the list button in the player bar shows every part of the playing run and
+  plays from the one you click (it opens on the part playing now). On a best-parts playlist's page, double-click a part
+  to play from it.
+- Fix: next and previous did nothing in "Play all" on the Best parts page.
+- Part numbers stay right when a part is left out because its song file is gone.
+- Windows: a first build for 64-bit Windows 10 and 11 (an installer). Opening a shared .bolbeats file works there too.
+
 ## 1.6.1
 
 - Fix: the cover glow behind Now Playing, and filling in missing covers, could fail for songs whose cover was already
