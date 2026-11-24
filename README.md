@@ -65,6 +65,8 @@ fine) or pick any folder in **Your library**.
 - **Search everything**, and artists tagged like "Artist A/Artist B" are split into real artists.
 - **Song details and covers filled in** for songs that miss them, from free lookups that send only the song title and
   artist. Every change is backed up and can be undone.
+- **Ten free starter songs** so a new library is never empty: two playlists and their best-parts versions are ready on
+  the first launch. Remove them from Your library when your own music is in; that deletes them and frees the space.
 
 ### And more
 - Custom playlist covers: generated art, emoji, or your own picture.
@@ -142,6 +144,11 @@ Checks: `pnpm run lint` (types, code and styles) and `node --test test/*.test.ts
   library; BolBeats' own library replaced it and speaks the same API, so the app's screens did not change.
 - Fonts: [Bricolage Grotesque](https://fonts.google.com/specimen/Bricolage+Grotesque) and
   [Instrument Sans](https://fonts.google.com/specimen/Instrument+Sans) (SIL Open Font License).
+- Starter songs: The Entertainer, Maple Leaf Rag, Canon in D Major, Dance of the Sugar Plum Fairy, Gymnopedie No 1,
+  Monkeys Spinning Monkeys, Sneaky Snitch, Carefree, Life of Riley and Fluffing a Duck by Kevin MacLeod
+  ([incompetech.com](https://incompetech.com)), licensed under
+  [Creative Commons: By Attribution 4.0](https://creativecommons.org/licenses/by/4.0/). Re-encoded to 160 kbps, retagged,
+  cover art added.
 - Song details from [iTunes Search](https://performance-partners.apple.com/search-api), [MusicBrainz](https://musicbrainz.org)
   and the [Cover Art Archive](https://coverartarchive.org).
 

@@ -11,6 +11,7 @@ import {
     planFolderPlaylists,
 } from '/@/renderer/features/bolify-folder/folder-playlists-plan';
 import { relinkParts, relinkPlaylists } from '/@/renderer/features/bolify-folder/folder-sync';
+import { makeStarterBestParts } from '/@/renderer/features/library-tools/components/starter-songs';
 import { allLibrarySongs } from '/@/renderer/features/library-tools/library-songs';
 import {
     rescanLibrary,
@@ -87,6 +88,7 @@ const sync = async () => {
             })
         )?.items ?? [];
     const created: string[] = [];
+    const createdLists: { id: string; name: string }[] = [];
     let added = 0;
     for (const plan of planFolderPlaylists(folders, songs, hidden, root)) {
         const key = `${root}|${plan.name}`;
@@ -104,6 +106,7 @@ const sync = async () => {
                     ?.id ?? null;
             if (!id) continue;
             created.push(plan.name);
+            createdLists.push({ id, name: plan.name });
         }
         const inList = new Set(
             (
@@ -137,6 +140,10 @@ const sync = async () => {
         ].filter(Boolean);
         toast.success({ message: bits.join(' '), title: 'Your library is up to date' });
     }
+    if (createdLists.length)
+        void makeStarterBestParts(createdLists).catch((e) =>
+            toast.error({ message: (e as Error).message, title: 'Couldn’t find best parts' }),
+        );
     return { added, created, hidden };
 };
 

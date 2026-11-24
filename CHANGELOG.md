@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.7.0
+
+- Ten free starter songs come with the app, so a new library is never empty: on the first launch with an empty music
+  folder they are copied into two folders, Starter - Classics and Starter - Feel Good. Each becomes a playlist, and
+  BolBeats makes the best-parts version of both by itself.
+- Your library > Starter songs: remove them once your own music is in. That deletes them from the music folder (with
+  their playlists and best parts) and frees the space. Add them back any time, even offline.
+- The songs are by Kevin MacLeod (incompetech.com), licensed under Creative Commons: By Attribution 4.0. Credits are in
+  the app, in each song's tags and in a CREDITS.txt in each folder.
+
 ## 1.6.2
 
 - Pick any part while best parts play: the list button in the player bar shows every part of the playing run and

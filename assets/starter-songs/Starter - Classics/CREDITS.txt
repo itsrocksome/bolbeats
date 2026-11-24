@@ -1,0 +1,13 @@
+BolBeats starter songs
+
+These songs come with BolBeats so you can try it straight away. Remove them any time from Your library > Starter songs; that deletes them from this folder and frees their space.
+
+Music by Kevin MacLeod (incompetech.com).
+Licensed under Creative Commons: By Attribution 4.0 (https://creativecommons.org/licenses/by/4.0/).
+Changes: re-encoded to 160 kbps MP3, retagged, cover art added.
+
+"The Entertainer" Kevin MacLeod (incompetech.com)
+"Maple Leaf Rag" Kevin MacLeod (incompetech.com)
+"Canon in D Major" Kevin MacLeod (incompetech.com)
+"Dance of the Sugar Plum Fairy" Kevin MacLeod (incompetech.com)
+"Gymnopedie No 1" Kevin MacLeod (incompetech.com)

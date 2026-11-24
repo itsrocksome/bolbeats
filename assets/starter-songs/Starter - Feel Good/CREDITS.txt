@@ -1,0 +1,13 @@
+BolBeats starter songs
+
+These songs come with BolBeats so you can try it straight away. Remove them any time from Your library > Starter songs; that deletes them from this folder and frees their space.
+
+Music by Kevin MacLeod (incompetech.com).
+Licensed under Creative Commons: By Attribution 4.0 (https://creativecommons.org/licenses/by/4.0/).
+Changes: re-encoded to 160 kbps MP3, retagged, cover art added.
+
+"Monkeys Spinning Monkeys" Kevin MacLeod (incompetech.com)
+"Sneaky Snitch" Kevin MacLeod (incompetech.com)
+"Carefree" Kevin MacLeod (incompetech.com)
+"Life of Riley" Kevin MacLeod (incompetech.com)
+"Fluffing a Duck" Kevin MacLeod (incompetech.com)

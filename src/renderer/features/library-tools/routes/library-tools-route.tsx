@@ -13,6 +13,7 @@ import {
 } from '/@/renderer/features/bolify-folder/folder-sync';
 import { PlaylistCloner } from '/@/renderer/features/library-tools/components/playlist-cloner';
 import { SongDetailsFixer } from '/@/renderer/features/library-tools/components/song-details-fixer';
+import { StarterSongs } from '/@/renderer/features/library-tools/components/starter-songs';
 import {
     changeMusicFolder,
     rescanLibrary,
@@ -183,6 +184,7 @@ const LibraryToolsRoute = () => {
                             </Text>
                         )}
                     </div>
+                    <StarterSongs />
                 </section>
 
                 <section aria-labelledby="lt-details" className={styles.section}>

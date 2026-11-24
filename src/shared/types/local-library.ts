@@ -5,3 +5,6 @@ export type LocalLibraryInfo = {
     url: string;
     username: string;
 };
+
+// Starter songs BolBeats copied into the music folder (`folders` = top-level folder names, one playlist each).
+export type StarterStatus = { bytes: number; count: number; folders: string[]; songs: number };

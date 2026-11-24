@@ -23,6 +23,7 @@ import { migrateNavidrome } from './migrate-navidrome';
 import { buildLibrary, emptyState, type Library, type LibraryState } from './model';
 import { AUDIO, scanFolder } from './scan';
 import { startServer } from './server';
+import { addStarter, removeStarter, starterStatus } from './starter';
 
 import { store } from '/@/main/features/core/settings';
 import log from '/@/main/logger';
@@ -40,6 +41,14 @@ const defaultFolder = () => {
     const mine = path.join(os.homedir(), 'Music', 'my_music');
     return existsSync(mine) ? mine : path.join(os.homedir(), 'Music');
 };
+
+// Starter songs ship in the app's assets; `localLibrary.starter` = music folder -> the files BolBeats copied there.
+const bundledStarter = app.isPackaged
+    ? path.join(process.resourcesPath, 'assets', 'starter-songs')
+    : path.join(__dirname, '../../assets/starter-songs');
+const starterKnown = () => (store.get('localLibrary.starter') ?? {}) as Record<string, string[]>;
+const setStarterKnown = (files: string[]) =>
+    store.set('localLibrary.starter', { ...starterKnown(), [folder]: files });
 
 let state: LibraryState | null = null;
 let lib: Library | null = null;
@@ -185,6 +194,16 @@ const start = async (): Promise<LocalLibraryInfo> => {
     }
     const scan = rescan(false);
     if (firstScan) await scan; // the very first time, open with the songs already there
+    // A brand-new, empty library starts with the starter songs (once; you can add them again from Your library).
+    if (firstScan && !lib?.songs.length && !store.get('localLibrary.starterOffered')) {
+        store.set('localLibrary.starterOffered', true);
+        try {
+            setStarterKnown(await addStarter(bundledStarter, folder));
+            await rescan(false);
+        } catch (err) {
+            log.warn('[local-library] could not add the starter songs', err);
+        }
+    }
     watchFolder();
     log.info('[local-library] ready', { folder, url: server.url });
     return { folder, password, url: server.url, username: USERNAME };
@@ -232,6 +251,17 @@ ipcMain.handle('local-library-choose-folder', async (event, testPath?: string) =
     await scanning;
     starting = null;
     return startOnce();
+});
+
+ipcMain.handle('local-library-starter', async (_event, action: 'add' | 'remove' | 'status') => {
+    await startOnce();
+    const known = starterKnown()[folder] ?? [];
+    if (action === 'add') setStarterKnown(await addStarter(bundledStarter, folder, known));
+    if (action === 'remove') {
+        await removeStarter(folder, known);
+        setStarterKnown([]);
+    }
+    return starterStatus(folder, starterKnown()[folder] ?? []);
 });
 
 app.on('will-quit', stop);
