@@ -88,6 +88,15 @@ details { padding: 14px 18px; background: var(--glass); border: 1px solid var(--
 summary { cursor: pointer; font-weight: 600; }
 details p { color: var(--muted); margin: 10px 0 0; }
 ol.steps { color: var(--muted); padding-left: 20px; }
+/* sign-up form: posts to a Google Form through a hidden frame, so the page never leaves */
+.signup { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; align-items: end; }
+.signup label { display: grid; gap: 6px; font-size: 14px; color: var(--muted); }
+.signup .wide { grid-column: 1 / -1; }
+.signup textarea { resize: vertical; }
+.signup input, .signup textarea { font: inherit; color: var(--ink); background: var(--glass); border: 1px solid var(--edge); border-radius: 12px; padding: 12px 14px; min-width: 0; }
+.signup input:focus-visible, .signup textarea:focus-visible, .signup button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.signup button { border: 0; cursor: pointer; font: inherit; justify-content: center; }
+.thanks { color: var(--accent); font-weight: 600; }
 footer { padding: 48px 0 40px; color: var(--muted); font-size: 14px; display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: center; }
 </style>
 </head>
@@ -140,6 +149,26 @@ footer { padding: 48px 0 40px; color: var(--muted); font-size: 14px; display: fl
         <li>Put your music in your Music folder (folders are fine), or pick any folder in BolBeats.</li>
         <li>Open a playlist and press "Make best-parts version". That's it.</li>
       </ol>
+    </section>
+
+    <section id="get-notified">
+      <h2>Get new versions first</h2>
+      <p class="small">Leave your email and we'll write when a new version is out, at most once a month, and tell us what to build next. That's all we use it for, and you can ask us to delete it any time.</p>
+      <form class="signup" action="https://docs.google.com/forms/d/e/1FAIpQLScPT8tdfKP7GjH_qnKUd6la8MI7CWUVGz0c9q5TdgZANyxn-Q/formResponse" method="POST" target="signup-sink">
+        <label>Name<input name="entry.1068030255" autocomplete="name"></label>
+        <label>Email<input name="entry.658042672" type="email" required autocomplete="email"></label>
+        <label>Which music do you listen to?<input name="entry.1799520821" placeholder="Punjabi, Hindi, English..."></label>
+        <label class="wide">What would you like BolBeats to do next?<textarea name="entry.1642995421" rows="3"></textarea></label>
+        <button class="btn primary" type="submit">Notify me</button>
+      </form>
+      <p class="thanks" id="signup-thanks" role="status" hidden>Thanks! We'll let you know when the next version is out.</p>
+      <iframe name="signup-sink" title="Sign-up" hidden></iframe>
+      <script>
+        document.querySelector('.signup').addEventListener('submit', function (e) {
+          var f = e.target;
+          setTimeout(function () { f.reset(); f.hidden = true; document.getElementById('signup-thanks').hidden = false; }, 300);
+        });
+      </script>
     </section>
 
     <section>
